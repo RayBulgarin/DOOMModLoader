@@ -1,0 +1,21 @@
+concurrency:
+  cancel-in-progress: true
+  group: Mirror to GitHub Wiki
+name: Mirror to GitHub Wiki
+on:
+  push:
+    branches: wiki
+permissions:
+  contents: write
+run-name: "Mirror to wiki: ${{ github.event.head_commit.message }}"
+
+jobs:
+  mirror-to-github-wiki:
+    name: Mirror to GitHub Wiki
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Mirror to GitHub wiki
+        run: git push --force "${{ github.server_url }}/${{ github.repository }}.wiki.git" HEAD:master
