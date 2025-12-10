@@ -1,24 +1,24 @@
-## DOOMModLoader
+<h2 align="center">DOOMModLoader</h2>
+<p align="center">A mod loader for DOOM (2016)</p>
+<p align="center"><a href="/../../releases/latest/download/DOOMModLoader-Windows-x64.zip" title="Download for Windows"><img src="ReadMe - Download for Windows.svg" alt="[Download for Windows]" width="186" height="32"/></a>&ensp;<a href="/../../releases/latest/download/DOOMModLoader-Linux-x64.zip" title="Download for Linux/SteamOS"><img src="ReadMe - Download for Linux.svg" alt="[Download for Linux/SteamOS]" width="223" height="32"/></a></p>
 
-A mod loader for DOOM (2016).
+**Installation:** Right-click DOOM (2016) in your Steam library, and choose "*Manage*" > "*Browse local files*". This will open a File Explorer window in your DOOM (2016) installation folder. Download "*DOOMModLoader-Windows-x64.zip*" from one of the buttons above or from [**[the Releases page]**](/../../releases/latest), and extract it into that folder.
 
-Installation: Right-click DOOM (2016) in your Steam library, and choose "*Manage*" > "*Browse local files*" to open a File Explorer window in your DOOM (2016) installation folder. Download "*DOOMModLoader.zip*" from [**[the Releases page]**](../../../releases/latest), and extract it into that folder.
+**Usage:** Place mod zips into a "*Mods*" folder in your DOOM (2016) installation (without extracting them!), and run DOOMModLoader to install them. To uninstall mods, move them out of the "*Mods*" folder and run DOOMModLoader again.\
+After running DOOMModLoader once, a "*DOOMModLoaderSettings.txt*" file will be created, which you can edit with a raw text editor to configure settings.
+###### 🐧 *Note: On Linux/SteamOS, you should right-click DOOMModLoader and choose "Run in Konsole", or otherwise run it in a terminal.<br/>On Steam Deck, you can press Steam+X to open a virtual keyboard when you need to press Y/N to continue.*
 
-Usage: Place unextracted mod zips into a "*Mods*" folder in your DOOM (2016) installation, and run DOOMModLoader to install them. To uninstall mods, move them out of the "*Mods*" folder and run DOOMModLoader again.  
-After running DOOMModLoader once, a "*DOOMModLoader Settings.txt*" file will be created, which you can edit with a raw text editor to change certain settings.
+\
+For more help installing or creating mods, see [**[the wiki]**](/../../wiki).\
+<br/>
 
-*:penguin: Note: On Linux, you should right-click DOOMModLoader and choose "Run in Konsole", or otherwise run it in a terminal.*
+---
 
-## Other Tools
+\
+**Building:** To build/compile DOOMModLoader yourself, use .NET 10.0 SDK with `dotnet publish "./DOOMModLoader.csproj" --no-self-contained` for a runtime-dependent executable.\
+Alternatively, fork this repository and push a commit to any branch. This will trigger [**[an automated native build]**](/../../actions).
 
-[**[The Releases page]**](../../../releases/latest) also has a download called "*Tools.zip*". This contains all tools in this repository, including...
+## Special Thanks
 
-\- **DOOMExtract**: A command-line tool for extracting DOOM (2016) resources, necessary if you want to create your own mods.  
-\- **DOOMModLoader**: See above.  
-\- **idCrypt**: A command-line tool for decrypting certain binary files into plain text, and vice-versa. *Only available for Windows. On Linux, use [**[brunoanc/idCryptRust]**](https://github.com/brunoanc/idCryptRust/releases/latest) instead.*
-
-## Building
-
-To compile your own versions of these tools locally, you can use .NET 8.0 SDK to build DOOMExtract and DOOMModLoader with `dotnet publish "./DOOMExtract.csproj" --no-self-contained` and likewise for DOOMModLoader, and use MinGW-w64 to build idCrypt with `x86_64-w64-mingw32-gcc "./idCrypt.c" -o "./idCrypt.exe" -lbcrypt -Os`.
-
-Alternatively, simply fork this repository and push a commit to any branch. This will trigger [**[an automated build]**](../../../actions).
+[**@emoose**](https://github.com/emoose): Created the original DOOMExtract, DOOMModLoader, and idCrypt\
+PowerBall253 ([**@brunoanc**](https://github.com/brunoanc)): Created the DOOM (2016) executable patch to not require developer mode

@@ -1,22 +1,25 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<InvariantGlobalization>true</InvariantGlobalization>
+		<Nullable>enable</Nullable>
 		<OutputType>Exe</OutputType>
 		<PublishSingleFile>true</PublishSingleFile>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 
-		<!--Properties that Microsoft suggests for decreasing filesize-->
+		<!--Properties that Microsoft suggests for decreasing file size-->
 		<DebuggerSupport>false</DebuggerSupport>
 		<EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
 		<EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
 		<EventSourceSupport>false</EventSourceSupport>
 		<HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
 		<MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+		<MetricsSupport>false</MetricsSupport>
 		<OptimizationPreference>Size</OptimizationPreference>
 		<!--PublishTrimmed>true</PublishTrimmed-->
-		<StackTraceSupport>false</StackTraceSupport>
 		<UseNativeHttpHandler>true</UseNativeHttpHandler>
 		<UseSystemResourceKeys>true</UseSystemResourceKeys>
+		<XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
 		<DebugSymbols>false</DebugSymbols>
@@ -37,10 +40,4 @@
 	<PropertyGroup Condition="'$(CustomConditionBuildType)'=='SelfContained'">
 		<PublishTrimmed>true</PublishTrimmed>
 	</PropertyGroup>
-	<ItemGroup>
-		<Compile Include="..\DOOMExtract\DOOMResourceEntry.cs"/>
-		<Compile Include="..\DOOMExtract\DOOMResourceIndex.cs"/>
-		<Compile Include="..\DOOMExtract\EndianIO.cs"/>
-		<Compile Include="..\DOOMExtract\Utility.cs"/>
-	</ItemGroup>
 </Project>

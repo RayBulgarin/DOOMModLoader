@@ -1,217 +1,364 @@
-﻿using DOOMExtract;
+using DOOMModLoader.Extract;
+using DOOMModLoader.LoadMods;
+using DOOMModLoader.Shared;
 using System;
-using System.ComponentModel;
-using System.Diagnostics;
+using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading;
+using System.Reflection;
+
+// The Main method/entry point, help message, command-line parsing, program flow, and assembly attributes
+
+[assembly: AssemblyFileVersion(DOOMModLoader.Program.VersionString)]
+[assembly: AssemblyTitle("DOOM (2016)/DOOM VFR mod loader")]
 
 namespace DOOMModLoader;
-partial class Program
+static class Program
 {
-	enum SteamAppId // DOOM (2016) doesn't allow you to open the game executable directly,
-	{ // so we need the app ID in order to launch the game through Steam instead
-		DOOM_2016 = 379720,
-		DOOM_VFR  = 650000,
-	}
+	internal const string VersionString = "0.4"; // This should match the GitHub release tag, without the "v" prefix
 
 
 
-	static void PrintUsage()
+	// Displays the help message
+	static void PrintUsage(string[] args)
 	{
 		string executable = "./DOOMModLoader";
 		if (OperatingSystem.IsWindows())
 			executable = "DOOMModLoader.exe";
 
-		Console.WriteLine("Usage: " + executable + " [-[no]launchgame] [-moddir <pathToModsFolder>] [-[no]patchgame] [-[no]showconflicts] [-[no]snapmap]");
+		bool modeCrypt = false;
+		bool modeExtract = false;
+		foreach (string x in args) // Look for "-decrypt", "-encrypt", and "-extract"
+		{
+			// Support "-", "--", and "/" prefixes, and ignore case
+			string arg = x.ReplaceOrdinal("--", "-").Replace('/', '-').ToLowerInvariant();
+			switch (arg)
+			{
+				case "-decrypt":
+				case "-encrypt":
+					modeCrypt = true;
+					break;
+				case "-extract":
+					modeExtract = true;
+					break;
+			}
+		}
+
 		Console.WriteLine();
-		Console.WriteLine("    -help              - Display this text");
-		Console.WriteLine("    -[no]launchgame    - [Don't] Launch the game after installing mods");
-		Console.WriteLine("    -moddir <path>     - Use mods from a given path instead of \"Mods\"");
-		Console.WriteLine("    -[no]patchgame     - [Don't] Patch the game to not require developer mode, if possible");
-		Console.WriteLine("    -[no]showconflicts - [Don't] Show mod file conflicts");
-		Console.WriteLine("    -[no]snapmap       - [Don't] Install mods for SnapMap instead of Campaign/Multiplayer");
+		Console.WriteLine($"Usage: Load mods: {executable} [options]");
+		if (!modeCrypt && !modeExtract)
+		{
+			Console.WriteLine(
+				"\"Options\" can be any of the following:"
+				+ "\n    -[no]checkforupdates - [Don't] Check for updates before installing mods"
+				+ "\n    -[no]launchgame      - [Don't] Launch the game after installing mods"
+				+ "\n    -moddir <path>       - Load mods from a given directory instead of \"Mods\""
+				+ "\n    -[no]patchgame       - [Don't] Patch the game to not require developer mode, if possible"
+				+ "\n    -[no]showconflicts   - [Don't] Show mod file conflicts"
+				+ "\n    -[no]showzipwarnings - [Don't] Show mod development warnings for zips, not just loose files"
+				+ "\n    -[no]snapmap         - [Don't] Install mods for SnapMap instead of Campaign/Multiplayer"
+				+ "\n    -[no]uncapcutscenes  - [Don't] Let cutscenes run at more than 60 FPS"
+				+ "\n    -[no]verbose         - [Don't] Display more information while installing mods"
+				+ "\nAll options besides \"-moddir\" can also be set in \"DOOMModLoaderSettings.txt\""
+			);
+		}
+		else
+			Console.WriteLine($"    Show options: {executable} -help");
+
 		Console.WriteLine();
-		Console.WriteLine("All options besides \"-moddir\" can also be set in \"DOOMModLoader Settings.txt\"");
+		Console.WriteLine($"Extract game resources: {executable} -extract [options]");
+		if (modeExtract && !modeCrypt)
+		{
+			Console.WriteLine(
+				"You'll be prompted for confirmation before any files are extracted"
+				+ "\n\"Options\" can be any of the following:"
+				+ "\n    -filter <filters> - Filter by file names, e.g. -filter \"maps/*.entities\" \"generated/decls/entitydef/*\""
+				+ "\n    -force            - Extract resources even if the output directory already exists. Requires \"-out\""
+				+ "\n    -in <file>        - Extract resources from a given file instead of \"base/gameresources.pindex\""
+				+ "\n    -out <path>       - Extract resources to the given directory instead of \"gameresources\""
+				+ "\n    -simulate         - Print would-be extracted files without actually extracting them"
+				+ "\n    -snapmap          - Extract resources for SnapMap instead of Campaign/Multiplayer. Incompatible with \"-in\""
+				+ "\n    -type <types>     - Filter by types, e.g. -type perkGroups weapon"
+				+ "\n    -verbose          - Display more information while extracting resources"
+			);
+		}
+		else
+		{
+			Console.WriteLine("    You'll be prompted for confirmation before any files are extracted");
+			Console.WriteLine($"    Show options: {executable} -help -extract");
+		}
+
+		Console.WriteLine();
+		Console.WriteLine($"Decrypt/Encrypt binary file: {executable} -decrypt|-encrypt <file> <key> [options]");
+		if (modeCrypt && !modeExtract)
+		{
+			Console.WriteLine(
+				$"Example: {executable} -decrypt \"./english.bfile\" \"strings/english.lang\""
+				+ "\n\"Options\" can be any of the following:"
+				+ "\n    -force              - Overwrite an existing file. Optional if \"-out\" isn't set"
+				+ "\n    -iv <hexadecimal>   - When encrypting, set 16 specific bytes for the AES IV. Defaults to zero for a deterministic output"
+				+ "\n    -out <file>         - Save the decrypted/encrypted file to the given path instead of \"<file>.dec\" or \"<file>.bfile\""
+				+ "\n    -salt <hexadecimal> - When encrypting, set 12 specific bytes for the salt. Defaults to zero for a deterministic output"
+				+ "\n    -verbose            - Display more information about the decrypted/encrypted file"
+				+ "\nDOOMModLoader extracts and loads decrypted files, so you don't need to do this manually for DOOM (2016)"
+			);
+		}
+		else
+		{
+			Console.WriteLine($"    Example: {executable} -decrypt \"./english.bfile\" \"strings/english.lang\"");
+			Console.WriteLine($"    Show options: {executable} -help -decrypt|-encrypt");
+		}
+
+		Console.WriteLine();
+		Console.WriteLine($"Display this text: {executable} -help");
 	}
 
+	// The entry point. Parses command-line arguments and runs the applicable program mode
 	static int Main(string[] args)
 	{
-		Console.WriteLine("DOOMModLoader originally by infogram, v0.3 by Zwip-Zwap Zapony and PowerBall253");
-		Console.WriteLine("https://github.com/ZwipZwapZapony/DOOMModLoader");
-		Console.WriteLine();
+		Console.WriteLine($"    DOOMModLoader v{VersionString} by Zwip-Zwap Zapony and PowerBall253, originally by infogram");
+		Console.WriteLine("      https://github.com/ZwipZwapZapony/DOOMModLoader");
 
-		LoadConfig();
-		bool launchGame    = configLaunchGame;
-		bool patchGame     = configPatchGame;
-		bool showConflicts = configShowConflicts;
-		bool snapMap       = configSnapMap;
-		string modDir = "Mods";
+		// In case of unhandled exceptions, wait for a keystroke before terminating
+		AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(UnhandledExceptionHandler);
 
-		for (int i = 0; i < args.Length; i++) // Parse command-line arguments
+		// Parse command-line arguments
+		bool argDecrypt = false;
+		bool argEncrypt = false;
+		bool argExtract = false;
+		string argKey = ""; // Decryption/Encryption key
+		SearchValues<char> hexChars = SearchValues.Create("0123456789ABCDEFabcdef"); // For "-iv"/"-salt"
+		for (int i = 0; i < args.Length; i++)
 		{
-			string arg = args[i].Replace("--", "-").Replace('/', '-'); // Support "-", "--", and "/" prefixes
-			switch (arg.ToLowerInvariant()) // Case-insensitive
+			// Support "-", "--", and "/" prefixes, and ignore case
+			string arg = args[i].ReplaceOrdinal("--", "-").Replace('/', '-').ToLowerInvariant();
+			switch (arg)
 			{
+				case "-checkforupdates":
+				case "-nocheckforupdates":
+					Config.Cli.CheckForUpdates = (arg[1] != 'n');
+					break;
+				case "-decrypt":
+				case "-encrypt":
+					if ((i + 2) >= args.Length || string.IsNullOrEmpty(args[i+1]) || string.IsNullOrEmpty(args[i+2])
+					|| args[i+1].StartsWith('-')) // Warn about "-" for the file (but not key), but allow "/"
+					{
+						if ((i + 1) < args.Length && args[i+1].EqualsOrdinalIgnoreCase("help"))
+						{
+							PrintUsage(args);
+							Prompts.ExitPrompt(exitCode: 0);
+							return 0;
+						}
+						Console.WriteLine();
+						Prompts.WriteError($"ERROR: \"{arg}\" requires a path and key!");
+						if ((i + 1) < args.Length && Path.Exists(args[i+1]))
+							Prompts.WriteWarning($"If \"{args[i+1]}\" is a relative path, try \"./{args[i+1]}\" instead");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					if (arg[1] == 'd')
+						argDecrypt = true;
+					else
+						argEncrypt = true;
+					Config.Cli.In = args[++i];
+					argKey = args[++i]; // We will allow "-" at the start of the decryption/encryption key
+					break;
+				case "-extract":
+					argExtract = true;
+					break;
+				case "-filter":
+				case "-type":
+					List<string> list = ((arg == "-filter") ? Config.Cli.Filters : Config.Cli.Types);
+					while (i + 1 < args.Length) // Look for upcoming filters
+					{
+						if (args[i+1][0] == '-') // Stop when we reach another "-" (but not "/") option
+							break;
+						else
+							list.Add(args[++i].ToLowerInvariant()); // Case-insensitive
+					}
+					if (list.Count == 0)
+					{
+						Console.WriteLine();
+						Prompts.WriteError($"ERROR: \"{arg}\" requires a set of {((arg == "-filter") ? "filter" : "type")}s!");
+						if (i + 1 != args.Length) // If "-filter" isn't the final option, then the filter was skipped due to "-"
+							Prompts.WriteWarning($"{((arg == "-filter") ? "Filter" : "Type")}s cannot start with \"-\"");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					break;
+				case "-force":
+					Config.Cli.Force = true;
+					break;
 				case "-?":
 				case "-h":
 				case "-help":
-					PrintUsage();
+					PrintUsage(args);
+					Prompts.ExitPrompt(exitCode: 0);
 					return 0;
+				case "-in":
+				case "-moddir":
+				case "-out":
+					if ((i + 1) >= args.Length || string.IsNullOrEmpty(args[i+1]))
+					{
+						Console.WriteLine();
+						Prompts.WriteError($"ERROR: \"{arg}\" requires a path!");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					else if (args[i+1].StartsWith('-')) // Warn about "-", but allow "/" for paths
+					{
+						Console.WriteLine();
+						Prompts.WriteError($"ERROR: \"{arg}\" requires a path!");
+						if (Path.Exists(args[i+1]) || arg == "-out")
+							Prompts.WriteWarning($"If \"{args[i+1]}\" is a relative path, try \"./{args[i+1]}\" instead");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					if (arg == "-out")
+						Config.Cli.Out = args[++i];
+					else // Both "-in" and "-moddir"
+						Config.Cli.In = args[++i];
+					break;
+				case "-iv":
+					if ((i + 1) >= args.Length || args[i+1].Length != 2*0x10
+					|| MemoryExtensions.ContainsAnyExcept(args[i+1], hexChars))
+					{
+						Console.WriteLine();
+						Prompts.WriteError("ERROR: \"-iv\" requires 16 hexadecimal bytes without spaces!");
+						Prompts.WriteWarning("Example: -iv 79B80D3FC448CA091ACD361C66F013A7");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					Config.Cli.Iv = Convert.FromHexString(args[++i]);
+					break;
 				case "-launchgame":
 				case "-nolaunchgame":
-					launchGame = (arg[1] != 'n');
-					if (askToLaunchGame)
-					{
-						askToLaunchGame = false; // If "-(no)launchGame" was specified on the command-line, don't ask whether to launch it
-						shouldSaveConfig = false; // Likewise, don't save a settings file that skips that question if the user has never been asked
-					}
+					Config.Cli.LaunchGame = (arg[1] != 'n');
 					break;
-				case "-moddir":
-					if ((i + 1) < args.Length)
-						modDir = args[++i];
-					break;
+				// "-moddir" is handled alongside "-in"
+				// "-out" is handled alongside "-in"
 				case "-patchgame":
 				case "-nopatchgame":
-					patchGame = (arg[1] != 'n');
+					Config.Cli.PatchGame = (arg[1] != 'n');
+					break;
+				case "-salt":
+					if ((i + 1) >= args.Length || args[i+1].Length != 2*0xC
+					|| MemoryExtensions.ContainsAnyExcept(args[i+1], hexChars))
+					{
+						Console.WriteLine();
+						Prompts.WriteError("ERROR: \"-salt\" requires 12 hexadecimal bytes without spaces!");
+						Prompts.WriteWarning("Example: -salt 5A5E829EEE78F86EE610BB09");
+						Prompts.ExitPrompt();
+						return 1;
+					}
+					Config.Cli.Salt = Convert.FromHexString(args[++i]);
 					break;
 				case "-showconflicts":
 				case "-noshowconflicts":
-					showConflicts = (arg[1] != 'n');
+					Config.Cli.ShowConflicts = (arg[1] != 'n');
+					break;
+				case "-showzipwarnings":
+				case "-noshowzipwarnings":
+					Config.Cli.ShowZipWarnings = (arg[1] != 'n');
+					break;
+				case "-simulate":
+					Config.Cli.Simulate = true;
 					break;
 				case "-snap":
 				case "-snapmap":
 				case "-nosnap":
 				case "-nosnapmap":
-					snapMap = (arg[1] != 'n');
+					Config.Cli.SnapMap = (arg[1] != 'n');
+					break;
+				// "-type" is handled alongside "-filter"
+				case "-uncapcutscenes":
+				case "-nouncapcutscenes":
+					Config.Cli.UncapCutscenes = (arg[1] != 'n');
+					break;
+				case "-verbose":
+				case "-noverbose":
+					Config.Cli.Verbose = (arg[1] != 'n');
 					break;
 				default:
-					Console.WriteLine("Unknown option \"" + arg + "\"!");
+					Console.WriteLine();
+					Prompts.WriteError($"ERROR: Unknown option \"{arg}\"!");
+					Prompts.ExitPrompt();
 					return 1;
 			}
 		}
 
-		SteamAppId appId;
-		if (File.Exists("./DOOMx64.exe"))
+		// Run the relevant program mode
+		if ((argDecrypt && argEncrypt) || (argDecrypt && argExtract) || (argEncrypt && argExtract))
 		{
-			appId = SteamAppId.DOOM_2016;
-			if (!File.Exists("./base/" + (snapMap ? "snap_" : "") + "gameresources.pindex"))
-			{
-				FatalError("Failed to find \"" + (snapMap ? "snap_" : "") + "gameresources.pindex\" in the base folder!");
-				return 1;
-			}
-		}
-		else if (File.Exists("./DOOMVFRx64.exe"))
-		{
-			appId = SteamAppId.DOOM_VFR;
-			snapMap = false;
-			if (!File.Exists("./base/gameresources.index")) // DOOM VFR doesn't have a patch container
-			{
-				FatalError("Failed to find \"gameresources.index\" in the base folder!");
-				return 1;
-			}
-		}
-		else
-		{
-			FatalError("Failed to find \"DOOMx64.exe\" in the current directory!");
+			Console.WriteLine();
+			Prompts.WriteError("ERROR: You can only use one of \"-decrypt\", \"-encrypt\", and \"-extract\" at a time!");
+			Prompts.ExitPrompt();
 			return 1;
 		}
-
-		if (!Directory.Exists(modDir))
-		{
-			if (Directory.Exists(modDir.ToLowerInvariant())) // The default changed from "mods" to "Mods", and Linux is case-sensitive, so check for an old "mods" folder
-				modDir = modDir.ToLowerInvariant();
-			else
-				Directory.CreateDirectory(modDir);
-		}
-
-		UninstallMods(snapMap); // Delete previously-installed mods
-		bool hasMods = InstallMods(modDir, snapMap, showConflicts); // Install new mods
-
-		GameExeStatus exeStatus = CheckGameExecutables();
-		if (exeStatus == GameExeStatus.Vanilla_New && patchGame)
-		{
-			if (PatchGameExecutables())
-				exeStatus = GameExeStatus.Patched_New;
-			else
-			{
-				Utility.WriteWarning("Failed to patch the game executables", true);
-				Console.WriteLine("Developer mode may be necessary to launch the game with mods installed");
-				Console.ResetColor();
-				if (!askToLaunchGame)
-					Console.WriteLine();
-			}
-		}
-
-		if (askToLaunchGame)
-		{
-			Console.WriteLine();
-			Console.WriteLine("Mods were successfully " + (hasMods ? "" : "un") + "installed");
-			Console.WriteLine("Do you want to launch the game? You can change this later by editing \"DOOMModLoader Settings.txt\"");
-			Console.WriteLine("Press [Y] to launch the game, or [N] to exit...");
-
-			configLaunchGame = YesNoPrompt();
-			launchGame = configLaunchGame;
-
-			if (!launchGame) // Exit immediately if the user pressed N
-			{
-				SaveConfig();
-				return 0;
-			}
-		}
+		else if (argDecrypt || argEncrypt)
+			MainCrypt(argEncrypt, argKey);
+		else if (argExtract)
+			MainExtract();
 		else
-		{
-			if (hasMods)
-				Console.WriteLine("Mods were successfully installed!");
-			else
-				Console.WriteLine("No mods found. Mods were successfully uninstalled!");
-		}
+			MainLoadMods();
 
-		SaveConfig(); // Yes, this belongs outside (but still after!) the "if (askToLaunchGame)" block
-
-		if (launchGame)
-		{
-			string doomLauncherFile = "." + Path.DirectorySeparatorChar + "DOOMLauncher.exe"; // A forward slash doesn't work here
-
-			Console.WriteLine("Launching game...");
-
-			ProcessStartInfo startInfo = new();
-			startInfo.UseShellExecute = true; // Don't wait for the process to end, and make it more likely for "steam://" URLs to work
-
-			if ((exeStatus is GameExeStatus.Vanilla_Old or GameExeStatus.Vanilla_New)
-			&& OperatingSystem.IsWindows() && File.Exists(doomLauncherFile))
-			{
-				// If the game executables weren't patched, use DOOMLauncher if it exists
-				startInfo.FileName = doomLauncherFile;
-				startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-				if (snapMap)
-					startInfo.Arguments = "+com_gameType 1";
-			}
-			else
-				startInfo.FileName = "steam://run/" + (int)appId + (snapMap ? "//+com_gameType 1" : "");
-
-			try
-			{
-				Process.Start(startInfo);
-				Console.WriteLine("Launched game!");
-			}
-			catch (Exception e) when (e is Win32Exception) // "Win32Exception" is cross-platform, used when the file doesn't exist
-			{
-				Console.WriteLine("Failed to launch the game, but mods were successfully " + (hasMods ? "" : "un") + "installed");
-				PressKeyPrompt();
-				return 0; // Mods were installed, so it's okay to exit with 0
-			}
-		}
-
-		if (!skipPrompts)
-		{
-			Console.CancelKeyPress += ExitCtrlCHandler;
-			Console.WriteLine();
-			Console.WriteLine("Exiting in 10 seconds... (Press [Ctrl+C] to keep this window open...)");
-			Thread.Sleep(10000);
-
-			if (ctrlCHandlerUsed) // Apparently using Ctrl+C during a sleep will return to the post-sleep code when the sleep expires
-				Thread.Sleep(Timeout.Infinite); // In that case, sleep again, forever, and let the Ctrl+C handler end the process instead
-		}
 		return 0;
+	}
+
+	// Called by default, unless "-decrypt", "-encrypt", or "-extract" are used
+	static void MainLoadMods()
+	{
+		HandleMods.ProcessArguments();
+		Config.File.Load();
+		UpdateCheck.AskToCheck();
+		UpdateCheck.CheckForUpdates();
+		HandleMods.ValidatePaths();
+		HandleMods.UninstallModsAndSetPatchNumber();
+		PatchGame.CheckAndPatchGame();
+		bool hasMods = HandleMods.InstallMods();
+		LaunchGame.AskToLaunch(hasMods);
+		LaunchGame.LaunchAndExit(hasMods);
+	}
+
+	// Called by "-extract" to extract game resources
+	static void MainExtract()
+	{
+		ExtractMiscellaneous.ProcessArguments();
+		ExtractMiscellaneous.ValidatePaths();
+		ExtractQuestionnaire.CheckForPindex();
+		// Open the container now, so that the user won't have to answer questions if they'd just get an error later
+		using ResourceArchive container = new(Config.Cli.In);
+		ExtractQuestionnaire.Answers answers = ExtractQuestionnaire.AskQuestions();
+		ExtractContainer.Extract(container, answers);
+
+		Prompts.ExitPrompt(exitCode: 0);
+		return;
+	}
+
+	// Called by "-decrypt" and "-encrypt" to decrypt/encrypt a file on disk
+	static void MainCrypt(bool encrypt, string key)
+	{
+		DecryptEncryptCli.ProcessArguments(encrypt);
+		if (encrypt)
+			DecryptEncryptCli.EncryptFile(key);
+		else
+			DecryptEncryptCli.DecryptFile(key);
+
+		Prompts.ExitPrompt(exitCode: 0);
+		return;
+	}
+
+	// In case of unhandled exceptions, wait for a keystroke before terminating
+	static void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
+	{
+		Console.WriteLine();
+		Prompts.WriteError("ERROR: Unhandled exception!");
+		Prompts.WriteWarning(e.ExceptionObject.ToString());
+		try
+			{Prompts.ExitPrompt();}
+		catch
+			{}
+		Environment.Exit(1);
+		return;
 	}
 }
