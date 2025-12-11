@@ -16,8 +16,9 @@ After [**[extracting game resources]**](Creating-Mods), each language's text str
 }
 ```
 Ignoring the `\t` line, each string is comprised of two parts: The name (`"#str_dossier_arsenal_weapon_shotgun_desc"`), and the text (`"Effective at medium and close range, the Shotgun is a versatile weapon for most encounters."`).\
-Some strings also contain two numbers after the text (`"#str_zion_weapon_shotgun" "Shotgun" "22" "22"`), but this just seems to be a "maximum string length" property for localisers to be aware of.
+Some strings also contain two numbers after the text (`"#str_zion_weapon_shotgun" "Shotgun" "22" "22"`), but this just seems to be a "preferable max string length" for localisers, and can be ignored.
 
+\
 To create custom text strings, create a raw text file at "*generated/binaryfile/strings/english.bfile*" in your mod, add a pair of curly brackets (`{}`), and add each string you want on a separate line between them. Example:
 ```
 {

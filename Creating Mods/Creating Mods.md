@@ -21,6 +21,7 @@ Use the recommended extraction settings?
 ```
 If this looks all right to you, then press **[Y]** to begin extracting game resources. Press **[N]** if you want to read about and change the settings first. The extracted resources will be in a "*gameresources*" folder in your DOOM (2016) installation.
 
+\
 Next, create a new folder with any name you'd like within your "*Mods*" folder, and copy any of the extracted files into your folder while keeping the folder hierarchy intact.\
 For example, "*-/DOOM/gameresources/generated/decls/weapon/weapon/zion/player/sp/pistol.decl*" would become "*-/DOOM/Mods/My Awesome Mod/generated/decls/weapon/weapon/zion/player/sp/pistol.decl*".\
 Edit the copied files in your mod folder, and run DOOMModLoader to test them.
@@ -45,5 +46,5 @@ Otherwise, double-check that the folder hierarchy in the zip is correct - when y
 [**[Mod.Decl]**](Creating-Mods-~-Mod.Decl) - Auto-execute console commands/variables.\
 [**[Text Strings]**](Creating-Mods-~-Text-Strings) - Add or replace lines of text.\
 [**[Tips]**](Creating-Mods-~-Tips) - Miscellaneous tips and tricks.\
-[**[Videos]**](Creating-Mods-~-Videos) - Convert and use custom videos.\
+[**[Video Files]**](Creating-Mods-~-Video-Files) - Convert and use custom videos.\
 [**[https://wiki.eternalmods.com/]**](https://wiki.eternalmods.com/) - A community-run DOOM Eternal modding wiki, which also houses information useful for DOOM (2016).

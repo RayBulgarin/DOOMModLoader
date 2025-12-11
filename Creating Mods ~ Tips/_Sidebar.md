@@ -8,6 +8,6 @@
 		<li><a href="Creating-Mods-~-Mod.Decl" title="Auto-execute console commands/variables">📝 Mod.Decl</a></li>
 		<li><a href="Creating-Mods-~-Text-Strings" title="Add or replace lines of text">💬 Text Strings</a></li>
 		<li><a href="Creating-Mods-~-Tips" title="Miscellaneous tips and tricks">💡 <em>Tips</em></a></li>
-		<li><a href="Creating-Mods-~-Videos" title="Convert and use custom videos">🎥 Videos</a></li>
+		<li><a href="Creating-Mods-~-Video-Files" title="Convert and use custom videos">🎥 Video Files</a></li>
 	</ul>
 </h3>

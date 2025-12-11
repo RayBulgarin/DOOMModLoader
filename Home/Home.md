@@ -13,7 +13,7 @@
 	<tr>
 		<td>
 			<ul><li>
-				<a href="Installing-Mods-~-Settings"><b>[⚙️ Settings]</b></a><br/>
+				<a href="Installing-Mods-~-Settings"><strong>[⚙️ Settings]</strong></a><br/>
 				Configure options for the mod loader
 			</li></ul>
 		</td>
@@ -33,7 +33,7 @@
 	<tr>
 		<td>
 			<ul><li>
-				<a href="Creating-Mods-~-Mod.Decl"><b>[📝 Mod.Decl]</b></a><br/>
+				<a href="Creating-Mods-~-Mod.Decl"><strong>[📝 Mod.Decl]</strong></a><br/>
 				Auto-execute console commands/variables
 			</li></ul>
 		</td>
@@ -42,7 +42,7 @@
 	<tr>
 		<td>
 			<ul><li>
-				<a href="Creating-Mods-~-Text-Strings"><b>[💬 Text Strings]</b></a><br/>
+				<a href="Creating-Mods-~-Text-Strings"><strong>[💬 Text Strings]</strong></a><br/>
 				Add or replace lines of text
 			</li></ul>
 		</td>
@@ -51,7 +51,7 @@
 	<tr>
 		<td>
 			<ul><li>
-				<a href="Creating-Mods-~-Tips"><b>[💡 Tips]</b></a><br/>
+				<a href="Creating-Mods-~-Tips"><strong>[💡 Tips]</strong></a><br/>
 				Miscellaneous tips and tricks
 			</li></ul>
 		</td>
@@ -60,7 +60,7 @@
 	<tr>
 		<td>
 			<ul><li>
-				<a href="Creating-Mods-~-Videos"><b>[🎥 Videos]</b></a><br/>
+				<a href="Creating-Mods-~-Video-Files"><strong>[🎥 Video Files]</strong></a><br/>
 				Convert and use custom videos
 			</li></ul>
 		</td>
