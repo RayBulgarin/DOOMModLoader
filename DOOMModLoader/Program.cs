@@ -15,7 +15,7 @@ using System.Reflection;
 namespace DOOMModLoader;
 static class Program
 {
-	internal const string VersionString = "0.4"; // This should match the GitHub release tag, without the "v" prefix
+	internal const string VersionString = "0.5"; // This should match the GitHub release tag, without the "v" prefix
 
 
 

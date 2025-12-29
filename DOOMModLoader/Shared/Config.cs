@@ -153,7 +153,7 @@ static class Config
 #pragma warning disable IDE0018 // "Variable declaration can be inlined"
 				DateOnly temp;
 #pragma warning restore IDE0018
-				if (DateOnly.TryParseExact(text, "\\\"yyyy-MM-dd\\\"", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out temp))
+				if (DateOnly.TryParseExact(text, "\\\"yyyy-MM-dd\\\"", CultureInfo.InvariantCulture, DateTimeStyles.None, out temp))
 				{
 					result = temp;
 					return true;

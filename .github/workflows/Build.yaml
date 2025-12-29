@@ -7,63 +7,97 @@ on: push
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 #Use the oldest available Linux image for better compatibility
     timeout-minutes: 10
     steps:
       #Setup
       - name: Check out repository
         uses: actions/checkout@v6
-      #- name: Set up .NET SDK
-        #uses: actions/setup-dotnet@v5
-        #with: {dotnet-version: 10.0}
-      - name: Set up Alpine
-        uses: jirutka/setup-alpine@v1
-        with: {packages: dotnet10-sdk-aot}
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v5
+        with: {dotnet-version: 10.0}
 
       #Build
-      #- name: Build
-        #run: |
-          #dotnet format "./DOOMModLoader/DOOMModLoader.csproj" analyzers --severity info --verify-no-changes
-          #dotnet format "./DOOMModLoader/DOOMModLoader.csproj" style --severity info --verify-no-changes
-
-          #echo -e "::group::\e[36;1mLinux Build (Runtime-dependent)\e[0m"
-          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Linux/" --runtime linux-x64
-          #echo "::endgroup::"
-
-          #echo -e "::group::\e[36;1mWindows Build (Runtime-dependent)\e[0m"
-          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Windows/" --runtime win-x64
-          #echo "::endgroup::"
-
-          #echo -e "\e[36;1m$ ./DOOMModLoader -help\e[0m"
-          #./Build/Linux/DOOMModLoader -help
-      - name: Native build and test
-        shell: alpine.sh {0}
+      - name: Build and test
         run: |
           dotnet format "./DOOMModLoader/DOOMModLoader.csproj" analyzers --severity info --verify-no-changes
           dotnet format "./DOOMModLoader/DOOMModLoader.csproj" style --severity info --verify-no-changes
 
-          echo -e "::group::\e[36;1mLinux Build (Native)"
-          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Linux/" "--property:CustomConditionBuildType=AOTStatic" --runtime linux-musl-x64 --self-contained
+          #echo -e "::group::\e[36;1mLinux build (Runtime-dependent)\e[0m"
+          #echo -e -n "\e[32mx64: \e[0m"
+          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Linux-x64/" --runtime linux-x64
+          #echo -e -n "\e[32mARM64: \e[0m"
+          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Linux-ARM64/" --runtime linux-arm64
+          #echo "::endgroup::"
+
+          echo -e "::group::\e[36;1mInstall ARM64 cross-compilation dependencies\e[0m"
+          #Source: https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/cross-compile#linux
+          echo -e "\e[32m\$ sudo dpkg --add-architecture arm64\e[0m"
+          sudo dpkg --add-architecture arm64
+          echo -e "\e[32m\$ sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list <<EOF"
+          echo -e "\e[32mdeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted"
+          echo -e "\e[32mdeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted"
+          echo -e "\e[32mdeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse"
+          echo -e "\e[32mEOF'\e[0m"
+          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list <<EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse
+          EOF'
+          echo -e "\e[32m\$ sudo sed -i -e 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list\e[0m"
+          sudo sed -i -e 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          echo -e "\e[32m\$ sudo sed -i -e 's/deb mirror/deb [arch=amd64] mirror/g' /etc/apt/sources.list\e[0m"
+          sudo sed -i -e 's/deb mirror/deb [arch=amd64] mirror/g' /etc/apt/sources.list
+          echo -e "\e[32m\$ sudo apt update\e[0m"
+          sudo apt update
+          echo -e "\e[32m\$ sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu zlib1g-dev:arm64\e[0m"
+          sudo apt install -y clang llvm binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu zlib1g-dev:arm64
           echo "::endgroup::"
 
-          echo -e "\e[36;1m$ ./DOOMModLoader -help\e[0m"
-          ./Build/Linux/DOOMModLoader -help
+          echo -e "::group::\e[36;1mLinux build (Native)\e[0m"
+          echo -e -n "\e[32mx64: \e[0m"
+          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Linux-x64/" "--property:CustomConditionBuildType=AOT" --runtime linux-x64 --self-contained
+          echo -e -n "\e[32mARM64: \e[0m"
+          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Linux-ARM64/" "--property:CustomConditionBuildType=AOT" --runtime linux-arm64 --self-contained
+          echo "::endgroup::"
+
+          #echo -e "::group::\e[36;1mWindows build (Runtime-dependent)\e[0m"
+          #echo -e -n "\e[32mx64: \e[0m"
+          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Windows-x64/" --runtime win-x64
+          #echo -e -n "\e[32mARM64: \e[0m"
+          #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Windows-ARM64/" --runtime win-arm64
+          #echo "::endgroup::"
+
+          echo -e "\e[32m\$ ./DOOMModLoader -help\e[0m"
+          ./Build/Linux-x64/DOOMModLoader -help
 
       #Upload
       - name: Display files
         run: find -L "./Build/" -type f -printf "%7s B %p\n" | sort --key=3
-      - name: Upload (Linux)
+      - name: Upload (Linux x64)
         uses: actions/upload-artifact@v5
         with:
           compression-level: 9
-          name: "DOOMModLoader (Linux)"
-          path: "./Build/Linux/"
-      #- name: Upload (Windows)
+          name: "DOOMModLoader (Linux x64)"
+          path: "./Build/Linux-x64/"
+      - name: Upload (Linux ARM64)
+        uses: actions/upload-artifact@v5
+        with:
+          compression-level: 9
+          name: "DOOMModLoader (Linux ARM64)"
+          path: "./Build/Linux-ARM64/"
+      #- name: Upload (Windows x64)
         #uses: actions/upload-artifact@v5
         #with:
           #compression-level: 9
-          #name: "DOOMModLoader (Windows)"
-          #path: "./Build/Windows/"
+          #name: "DOOMModLoader (Windows x64)"
+          #path: "./Build/Windows-x64/"
+      #- name: Upload (Windows ARM64)
+        #uses: actions/upload-artifact@v5
+        #with:
+          #compression-level: 9
+          #name: "DOOMModLoader (Windows ARM64)"
+          #path: "./Build/Windows-ARM64/"
 
   build-windows:
     name: Build (Windows)
@@ -80,16 +114,23 @@ jobs:
       #Build
       - name: Native Windows build and test
         run: |
-          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Windows/" "--property:CustomConditionBuildType=AOT" --runtime win-x64 --self-contained
+          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Windows-x64/" "--property:CustomConditionBuildType=AOT" --runtime win-x64 --self-contained
+          dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --output "./Build/Windows-ARM64/" "--property:CustomConditionBuildType=AOT" --runtime win-arm64 --self-contained
 
-          Start-Process "./Build/Windows/DOOMModLoader.exe" "-help" -NoNewWindow -Wait
+          Start-Process "./Build/Windows-x64/DOOMModLoader.exe" "-help" -NoNewWindow -Wait
 
       #Upload
       - name: Display files
         run: Get-ChildItem "./Build/" -Recurse -Name -File
-      - name: Upload (Windows)
+      - name: Upload (Windows x64)
         uses: actions/upload-artifact@v5
         with:
           compression-level: 9
-          name: "DOOMModLoader (Windows)"
-          path: "./Build/Windows/"
+          name: "DOOMModLoader (Windows x64)"
+          path: "./Build/Windows-x64/"
+      - name: Upload (Windows ARM64)
+        uses: actions/upload-artifact@v5
+        with:
+          compression-level: 9
+          name: "DOOMModLoader (Windows ARM64)"
+          path: "./Build/Windows-ARM64/"
