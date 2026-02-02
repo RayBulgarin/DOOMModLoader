@@ -32,7 +32,7 @@ static class ExtractQuestionnaire
 		Console.Write(
 			""
 			+ $"\nWarning: \"{Path.GetFileName(Config.Cli.In)}\" contains outdated resources"
-			+ $"\nDo you want to {(Config.Cli.Simulate ? "simulate" : "extract")} \"{Path.GetFileName(patch)}\" instead?"
+			+ $"\nDo you want to extract \"{Path.GetFileName(patch)}\" instead?"
 			+  "\n"
 			+ $"\n(Press [Y] to use \"{Path.GetFileName(patch)}\" - Recommended)"
 			+ $"\n(Press [N] to use \"{Path.GetFileName(Config.Cli.In)}\")"
@@ -71,7 +71,7 @@ static class ExtractQuestionnaire
 		Demo         .index: |  1,822,616,903 |  1,188,798,464 |  1,868,046,336 |
 		DOOM VFR     .index: |  3,497,355,924 |  2,339,643,392 |  3,555,573,760 | */
 
-		if (Config.Cli.Simulate) // If we don't extract anything, it won't fill anything
+		if (Config.Cli.DryRun) // If we don't extract anything, it won't fill anything
 			return "0 B";
 
 		if (Config.Cli.Filters.Count != 0 || Config.Cli.Types.Count != 0)
@@ -110,11 +110,11 @@ static class ExtractQuestionnaire
 	static void ShowSettings(Answers answers)
 	{
 		Console.Write( // Not "WriteLine", because we want to "WriteSuccess" or "WriteError" on the same line
-			$"Container to {(Config.Cli.Simulate ? "simulate" : "extract")}:"
+			"Container to extract:"
 			+ $"\n    {Utility.HideUserName(Config.Cli.In)}"
 			+  "\nOutput directory:"
 			+ $"\n    {Utility.HideUserName(Config.Cli.Out)}"
-			+ $"\nResources to {(Config.Cli.Simulate ? "simulate" : "extract")}: "
+			+  "\nResources to extract: "
 		);
 		if (Config.Cli.Filters.Count != 0 || Config.Cli.Types.Count != 0)
 			Prompts.WriteWarning("Custom filter");
@@ -140,11 +140,8 @@ static class ExtractQuestionnaire
 
 		Console.WriteLine($"Expected size on disk: {ExpectedSize(answers)}");
 
-		if (Config.Cli.Simulate)
-		{
-			Console.Write("Simulate without extracting resources: ");
-			Prompts.WriteWarning("Yes");
-		}
+		if (Config.Cli.DryRun)
+			Prompts.WriteWarning("Dry-run without extracting resources: Yes");
 	}
 
 	// Asks the user how they'd like to extract resources
@@ -169,9 +166,9 @@ static class ExtractQuestionnaire
 		ShowSettings(answers);
 		Console.Write(
 			""
-			+ $"\nUse the recommended {(Config.Cli.Simulate ? "simula" : "extrac")}tion settings?"
+			+  "\nUse the recommended extraction settings?"
 			+  "\n"
-			+ $"\n(Press [Y] to begin {(Config.Cli.Simulate ? "simula" : "extrac")}ting resources)"
+			+ $"\n(Press [Y] to begin {(Config.Cli.DryRun ? "dry-runn" : "extract")}ing resources)"
 			+  "\n(Press [N] to customise settings)"
 		);
 		bool? choice = Prompts.GetYesOrNo();
@@ -205,13 +202,13 @@ static class ExtractQuestionnaire
 			Console.Write(
 				""
 				+  "\n"
-				+ $"\n{(Config.Cli.Simulate ? "Simulate" : "Extract")} generally useful/commonly-modified resources only?"
+				+  "\nExtract generally useful/commonly-modified resources only?"
 				+  "\n    This includes all decls, string files, and map .entities files"
 				+  "\n    Skipping other resources reduces the amount of files and size on disk"
 				+  "\n    (This can also be customised with the \"-filter\" and \"-type\" command-line arguments)"
 				+  "\n"
-				+ $"\n(Press [Y] to {(Config.Cli.Simulate ? "simulate" : "extract")} useful resources only - Recommended{sizeYes})"
-				+ $"\n(Press [N] to {(Config.Cli.Simulate ? "simulate" : "extract")} all resources{sizeNo})"
+				+ $"\n(Press [Y] to extract useful resources only - Recommended{sizeYes})"
+				+ $"\n(Press [N] to extract all resources{sizeNo})"
 			);
 			choice = Prompts.GetYesOrNo();
 
@@ -241,7 +238,7 @@ static class ExtractQuestionnaire
 				""
 				+  "\n"
 				+  "\nUse file system-level compression on the output directory?"
-				+ $"\n    This transparently, losslessly reduces the size on disk without affecting how you can use the {(Config.Cli.Simulate ? "simula" : "extrac")}ted files"
+				+  "\n    This transparently, losslessly reduces the size on disk without affecting how you can use the extracted files"
 				+  "\n    This does not create a zip-like archive; all files are still loose, and can be opened directly by any program"
 				+  "\n    (This only works for NTFS. Other file systems may also support compression, but DOOMModLoader doesn't know how to handle that for you)"
 				+  "\n"
@@ -294,9 +291,9 @@ static class ExtractQuestionnaire
 		ShowSettings(answers);
 		Console.Write(
 			""
-			+ $"\nUse these {(Config.Cli.Simulate ? "simula" : "extrac")}tion settings?"
+			+  "\nUse these extraction settings?"
 			+  "\n"
-			+ $"\n(Press [Y] to begin {(Config.Cli.Simulate ? "simula" : "extrac")}ting resources)"
+			+ $"\n(Press [Y] to begin {(Config.Cli.DryRun ? "dry-runn" : "extract")}ing resources)"
 			+  "\n(Press [N] to abort)"
 		);
 		choice = Prompts.GetYesOrNo();

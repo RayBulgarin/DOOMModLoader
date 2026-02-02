@@ -128,10 +128,11 @@ static class ExtractContainer
 	// Extracts game resources to loose files, and generates a "fileids.txt" file
 	public static void Extract(ResourceArchive container, ExtractQuestionnaire.Answers answers)
 	{
-		ExtractMiscellaneous.CreateOutputDirectory(answers);
+		if (!Config.Cli.DryRun)
+			ExtractMiscellaneous.CreateOutputDirectory(answers);
 
 		Console.WriteLine();
-		Console.WriteLine($"{(Config.Cli.Simulate ? "Simula" : "Extrac")}ting resources...");
+		Console.WriteLine("Extracting resources...");
 
 		SetUpFilters(answers.ExtractUseful);
 
@@ -183,7 +184,7 @@ static class ExtractContainer
 					+ $"\n    Type: \"{entry.Type}\""
 					+ $"\n    Name: \"{entry.ShortName}\""
 					+ $"\n    Size: {entry.Length}"
-					+ $"\n    Compressed: {((entry.Length == entry.CompressedLength) ? "No" : $"Yes ({100 - ((entry.CompressedLength * 100) / entry.Length)}%)")}"
+					+ $"\n    Compressed: {((entry.Length == entry.CompressedLength) ? "No" : $"{entry.CompressedLength} ({(entry.CompressedLength * 100) / entry.Length}%)")}"
 					+ $"\n    Patch index: {entry.Patch}"
 					+ "\n\n"; // One line break after the patch index, one blank line between verbose entries
 				}
@@ -193,32 +194,32 @@ static class ExtractContainer
 			}
 			Console.Write(text); // Not "WriteLine", as it already has "\n" at the end
 
-			if (!Config.Cli.Simulate)
-			{
-				for (int innerI = outerI; innerI < (outerI + perLoop) && innerI < matchedResources.Count; innerI++)
-				{
-					// Todo: Multi-thread this?
-					if (!ExtractResource.WriteFile(matchedResources[innerI], answers.ConvertCrLf, isDemo))
-					{
-						Console.WriteLine();
-						Prompts.WriteError("ERROR: Failed to extract resources!");
-						Prompts.ExitPrompt();
-						return;
-					}
+			if (Config.Cli.DryRun)
+				continue; // Don't extract files
 
-					if (innerI == 0 || innerI == perLoop-1) // Only extract a single resource for the first loop,
-					{ // and reset to a multiple of "perLoop" afterwards
-						if (outerI == 0)
-							outerI = (1 - perLoop); // It will become 1 after the outer loop increments it
-						else
-							outerI = 0; // It will become "perLoop" after the outer loop increments it
-						break;
-					}
+			for (int innerI = outerI; innerI < (outerI + perLoop) && innerI < matchedResources.Count; innerI++)
+			{
+				// Todo: Multi-thread this?
+				if (!ExtractResource.WriteFile(matchedResources[innerI], answers.ConvertCrLf, isDemo))
+				{
+					Console.WriteLine();
+					Prompts.WriteError("ERROR: Failed to extract resources!");
+					Prompts.ExitPrompt();
+					return;
+				}
+
+				if (innerI == 0 || innerI == perLoop-1) // Only extract a single resource for the first loop,
+				{ // and reset to a multiple of "perLoop" afterwards
+					if (outerI == 0)
+						outerI = (1 - perLoop); // It will become 1 after the outer loop increments it
+					else
+						outerI = 0; // It will become "perLoop" after the outer loop increments it
+					break;
 				}
 			}
 		}
 
-		if (!Config.Cli.Simulate) // Create "fileids.txt"
+		if (!Config.Cli.DryRun) // Create "fileids.txt"
 		{
 			fileIds.Sort(StringComparer.Ordinal);
 			fileIds[^1] = fileIds[^1].TrimEnd('\n'); // Remove the last newline
@@ -238,13 +239,13 @@ static class ExtractContainer
 		}
 
 		Console.WriteLine();
-		Prompts.WriteSuccess($"Successfully {(Config.Cli.Simulate ? "simula" : "extrac")}ted {matchedResources.Count} resources!");
+		Prompts.WriteSuccess($"Successfully {(Config.Cli.DryRun ? "dry-ran" : "extracted")} {matchedResources.Count} resources!");
 		if (Config.Cli.Verbose == true) // Not "Config.Final"
 			Prompts.WriteVerbose($"Skipped {emptyCount} empty resources");
 		int count = (fileIds.Count - matchedResources.Count);
 		Console.WriteLine($"Skipped {count} filtered resource{((count == 1) ? "" : "s")}");
 
-		if (!Config.Cli.Simulate)
+		if (!Config.Cli.DryRun)
 			AskToOpenOutput();
 	}
 }

@@ -16,6 +16,8 @@ static class DecryptEncryptCli
 		string text = "";
 		if (Config.Cli.CheckForUpdates == true)
 			text += "-checkforupdates, ";
+		if (Config.Cli.DryRun) // This doesn't differentiate between "-dry-run" and "-simulate"
+			text += "-dry-run, ";
 		if (Config.Cli.Filters.Count != 0)
 			text += "-filter, ";
 		if (!encrypt && (Config.Cli.Iv is not null))
@@ -30,8 +32,6 @@ static class DecryptEncryptCli
 			text += "-showconflicts, ";
 		if (Config.Cli.ShowZipWarnings == true)
 			text += "-showzipwarnings, ";
-		if (Config.Cli.Simulate)
-			text += "-simulate, ";
 		if (Config.Cli.SnapMap == true) // This doesn't differentiate between "-snap" and "-snapmap"
 			text += "-snapmap, ";
 		if (Config.Cli.Types.Count != 0)

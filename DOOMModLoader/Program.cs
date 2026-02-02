@@ -72,11 +72,11 @@ static class Program
 			Console.WriteLine(
 				"You'll be prompted for confirmation before any files are extracted"
 				+ "\n\"Options\" can be any of the following:"
+				+ "\n    -dry-run          - Print would-be extracted files without actually extracting them"
 				+ "\n    -filter <filters> - Filter by file names, e.g. -filter \"maps/*.entities\" \"generated/decls/entitydef/*\""
 				+ "\n    -force            - Extract resources even if the output directory already exists. Requires \"-out\""
 				+ "\n    -in <file>        - Extract resources from a given file instead of \"base/gameresources.pindex\""
 				+ "\n    -out <path>       - Extract resources to the given directory instead of \"gameresources\""
-				+ "\n    -simulate         - Print would-be extracted files without actually extracting them"
 				+ "\n    -snapmap          - Extract resources for SnapMap instead of Campaign/Multiplayer. Incompatible with \"-in\""
 				+ "\n    -type <types>     - Filter by types, e.g. -type perkGroups weapon"
 				+ "\n    -verbose          - Display more information while extracting resources"
@@ -162,6 +162,10 @@ static class Program
 						argEncrypt = true;
 					Config.Cli.In = args[++i];
 					argKey = args[++i]; // We will allow "-" at the start of the decryption/encryption key
+					break;
+				case "-dry-run":
+				case "-simulate":
+					Config.Cli.DryRun = true;
 					break;
 				case "-extract":
 					argExtract = true;
@@ -260,9 +264,6 @@ static class Program
 				case "-showzipwarnings":
 				case "-noshowzipwarnings":
 					Config.Cli.ShowZipWarnings = (arg[1] != 'n');
-					break;
-				case "-simulate":
-					Config.Cli.Simulate = true;
 					break;
 				case "-snap":
 				case "-snapmap":

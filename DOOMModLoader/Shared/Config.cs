@@ -24,13 +24,13 @@ static class Config
 
 		// Command-line-exclusive options
 		// "-decrypt", "-encrypt", "-extract", and "-help" are directly in the Main method
+		public static bool DryRun = false; // Extract: Print would-be extracted files
 		public static List<string> Filters = []; // Extract: File path/name filters
 		public static bool Force = false; // Decrypt/Encrypt/Extract: Allow a non-empty destination
 		public static string In = ""; // Mod directory, container to extract, or file to decrypt/encrypt
 		public static byte[]? Iv = null; // Encrypt: AES IV
 		public static string Out = ""; // Decrypt/Encrypt/Extract: Destination file/directory
 		public static byte[]? Salt = null; // Encrypt: Salt
-		public static bool Simulate = false; // Extract: Print would-be extracted files
 		public static List<string> Types = []; // Extract: Type filters
 	}
 

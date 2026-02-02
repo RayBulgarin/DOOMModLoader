@@ -36,6 +36,8 @@ static class HandleMods
 	public static void ProcessArguments()
 	{
 		string text = "";
+		if (Config.Cli.DryRun) // This doesn't differentiate between "-dry-run" and "-simulate"
+			text += "-dry-run, ";
 		if (Config.Cli.Filters.Count != 0)
 			text += "-filter, ";
 		if (Config.Cli.Force)
@@ -46,8 +48,6 @@ static class HandleMods
 			text += "-out, ";
 		if (Config.Cli.Salt is not null)
 			text += "-salt, ";
-		if (Config.Cli.Simulate)
-			text += "-simulate, ";
 		if (Config.Cli.Types.Count != 0)
 			text += "-type, ";
 		if (!string.IsNullOrEmpty(text))
