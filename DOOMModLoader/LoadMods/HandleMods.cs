@@ -177,6 +177,29 @@ static class HandleMods
 		}
 	}
 
+	// Returns true if any mods/patches will be installed, false otherwise
+	static bool AnyModsOrPatchexExist()
+	{
+		try
+		{
+			foreach (string x in Directory.EnumerateFileSystemEntries(Config.Cli.In))
+				return true; // Mods found
+		}
+		catch (Exception e) when (e is DirectoryNotFoundException or IOException
+		or PathTooLongException or SecurityException or UnauthorizedAccessException)
+		{
+			Console.WriteLine();
+			Console.WriteLine($"Installing {(Config.Final.SnapMap ? "SnapM" : "m")}ods...");
+			Console.WriteLine();
+			Prompts.WriteError("ERROR: Failed to install mods!");
+			Prompts.WriteWarning($"Could not access the \"{Path.GetFileName(Path.TrimEndingDirectorySeparator(Config.Cli.In))}\" directory. Try rebooting your computer and running DOOMModLoader again");
+			Prompts.ExitPrompt();
+			return false;
+		}
+
+		return Config.Final.UncapCutscenes; // No mods found. Return whether any patch is active
+	}
+
 	// Must be called before loading any mods
 	static void BeforeAllMods(ResourceArchive container)
 	{
@@ -305,31 +328,8 @@ static class HandleMods
 	// Loads and installs mods. Returns true if any mods/patches were installed, false otherwise
 	public static bool InstallMods()
 	{
-		if (!Config.Final.UncapCutscenes)
-		{
-			try
-			{
-				bool foundMods = false;
-				foreach (string x in Directory.EnumerateFileSystemEntries(Config.Cli.In))
-				{
-					foundMods = true;
-					break;
-				}
-				if (!foundMods)
-					return false; // No mods found, and no patches active
-			}
-			catch (Exception e) when (e is DirectoryNotFoundException or IOException
-			or PathTooLongException or SecurityException or UnauthorizedAccessException)
-			{
-				Console.WriteLine();
-				Console.WriteLine($"Installing {(Config.Final.SnapMap ? "SnapM" : "m")}ods...");
-				Console.WriteLine();
-				Prompts.WriteError("ERROR: Failed to install mods!");
-				Prompts.WriteWarning($"Could not access the \"{Path.GetFileName(Path.TrimEndingDirectorySeparator(Config.Cli.In))}\" directory. Try rebooting your computer and running DOOMModLoader again");
-				Prompts.ExitPrompt();
-				return false;
-			}
-		}
+		if (!AnyModsOrPatchexExist())
+			return false;
 
 		Console.WriteLine();
 		Console.WriteLine($"Installing {(Config.Final.SnapMap ? "SnapM" : "m")}ods...");

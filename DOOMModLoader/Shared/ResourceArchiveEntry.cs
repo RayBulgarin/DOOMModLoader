@@ -19,7 +19,7 @@ class ResourceArchiveEntry
 
 
 	public readonly ResourceArchive? Archive; // The container owning this resource
-	public int Id; // Does not have to correspond with the resource order, nor be unique
+	public int Id; // Does not have to correspond to the resource order, nor be unique
 	int _typeIndex = 0;
 	public string Type // E.g. "perkGroups"
 	{

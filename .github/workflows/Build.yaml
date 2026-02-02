@@ -68,12 +68,13 @@ jobs:
           #dotnet publish "./DOOMModLoader/DOOMModLoader.csproj" --no-self-contained --output "./Build/Windows-ARM64/" --runtime win-arm64
           #echo "::endgroup::"
 
-          echo -e "\e[32m\$ ./DOOMModLoader -help\e[0m"
+          echo -e "\e[36;1mBuilt files:\e[0m"
+          find -L ./Build/ -type f -printf "%7s B %p\n" | sort --key=3
+
+          echo -e "\e[36;1m\$ ./DOOMModLoader -help\e[0m"
           ./Build/Linux-x64/DOOMModLoader -help
 
       #Upload
-      - name: Display files
-        run: find -L "./Build/" -type f -printf "%7s B %p\n" | sort --key=3
       - name: Upload (Linux x64)
         uses: actions/upload-artifact@v5
         with:
