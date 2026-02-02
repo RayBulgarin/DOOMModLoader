@@ -144,19 +144,19 @@ static class HandleModDecl
 	// Saves custom console command/variables, and adds the installed mods to the start of the in-game console log
 	public static void SavePackageCfg(ResourceArchive container, FileStream destination)
 	{
-		ResourceArchiveEntry? entry = container.Entries.FindLast(x => x.FullName == "generated/binaryfile/package.bfile");
-		if (entry is null)
+		List<ResourceArchiveEntry> entries = container.Entries.FindAll(x => x.FullName == "generated/binaryfile/package.bfile");
+		if (entries.Count != 1)
 			goto Failure;
 
 		IdCrypt.Decrypted? dec;
-		using (Stream stream = entry.Open())
+		using (Stream stream = entries[0].Open())
 		{
-			Span<byte> bytes = new byte[entry.Length]; // Should be less than a kilobyte
+			Span<byte> bytes = new byte[entries[0].Length]; // Should be less than a kilobyte
 			try
 				{stream.ReadExactly(bytes);}
 			catch (Exception e) when (e is InvalidDataException or IOException)
 				{goto Failure;}
-			dec = IdCrypt.Decrypt(bytes, entry.ShortName);
+			dec = IdCrypt.Decrypt(bytes, entries[0].ShortName);
 		}
 		if (dec is null)
 			goto Failure;
@@ -199,9 +199,9 @@ static class HandleModDecl
 			.. exec,
 		];
 
-		HandleResource.StartData(entry, destination);
-		destination.Write(IdCrypt.Encrypt(dec, entry.ShortName));
-		HandleResource.FinishData(entry, destination);
+		HandleResource.StartData(entries, destination);
+		destination.Write(IdCrypt.Encrypt(dec, entries[0].ShortName));
+		HandleResource.FinishData(entries, destination);
 		return;
 
 Failure:

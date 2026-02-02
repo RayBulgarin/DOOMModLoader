@@ -123,11 +123,16 @@ Failure:
 	{
 		foreach (KeyValuePair<string, (int Id, string Mod)> newId in newIds)
 		{
-			ResourceArchiveEntry? entry = container.Entries.FindLast(x => x.FullName == newId.Key);
-			if (entry is null)
+			List<ResourceArchiveEntry> entries = container.Entries.FindAll(x => x.FullName == newId.Key);
+			if (entries.Count == 0 && !HandleMods.Data.ModResources.Contains(newId.Key))
 				HandleWarnings.AddFileIdsMissingResources(newId.Value.Mod, newId.Key);
 			else
-				entry.Id = newId.Value.Id;
+			{
+				foreach (ResourceArchiveEntry entry in entries)
+					entry.Id = newId.Value.Id;
+			}
 		}
+		// Todo: Support resources even if their full names were emptied due to being replaced with an empty file
+		// Currently, the "!HandleMods.Data.ModResources.Contains" check is to just avoid showing a warning for it
 	}
 }

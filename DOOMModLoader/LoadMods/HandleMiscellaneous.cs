@@ -317,10 +317,10 @@ static class HandleMiscellaneous
 			// (This will not affect "idTarget_AdaptiveTickToggle" entities)
 			using (Stream source = entry.Open())
 			{
-				HandleResource.StartData(entry, destination); // "StartData" must happen after "entry.Open()"
+				HandleResource.StartData([entry], destination); // "StartData" must happen after "entry.Open()"
 				LoadReplaceData(source, destination, entry.Length, "disableAdaptiveTick"u8, "_"u8);
 			}
-			HandleResource.FinishData(entry, destination);
+			HandleResource.FinishData([entry], destination);
 		}
 
 		Prompts.WriteVerbose("        Uncapped generated/decls/entitydef/*.decl");

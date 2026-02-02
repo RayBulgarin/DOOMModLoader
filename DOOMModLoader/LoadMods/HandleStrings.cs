@@ -344,15 +344,13 @@ Failure:
 				AesIv         = dec?.AesIv ?? null!,
 			};
 
-			if (!langMap.TryAdd(entry.ShortName, lang))
-				{} // Duplicate string resource - Fall through to the error below
-			else if (dec is not null)
+			if (langMap.TryAdd(entry.ShortName, lang) && dec is not null)
 			{
 				ParseAllStrings(dec.Data, lang, true); // Todo: Do this on a separate thread per language?
 				continue;
 			}
 			else
-				goto Failure;
+				goto Failure; // Duplicate string resource, or failed to decrypt
 
 Failure:
 			Console.WriteLine();
@@ -503,9 +501,9 @@ Failure:
 			bytes[i] = (byte)'}';
 			Utility.Assert(i == newLength-1, $"SaveStrings: i ({i}) != newLength-1 ({newLength-1})");
 
-			HandleResource.StartData(lang.Resource, destination);
+			HandleResource.StartData([lang.Resource], destination);
 			destination.Write(IdCrypt.Encrypt(dec, lang.Resource.ShortName));
-			HandleResource.FinishData(lang.Resource, destination);
+			HandleResource.FinishData([lang.Resource], destination);
 		}
 
 		langMap.Clear();

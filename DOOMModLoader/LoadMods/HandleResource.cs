@@ -1,5 +1,6 @@
 using DOOMModLoader.Shared;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 // Miscellaneous resource-handling methods
@@ -8,12 +9,13 @@ namespace DOOMModLoader.LoadMods;
 static class HandleResource
 {
 	// Call before writing a resource's data. Pads and sets the resource's offset
-	public static void StartData(ResourceArchiveEntry entry, FileStream destination)
+	public static void StartData(List<ResourceArchiveEntry> entries, FileStream destination)
 	{
 		try
 		{
 			destination.Position = ((destination.Position + 0xF) & ~0xF); // Pad to start at a 0x10 alignment
-			entry.Offset = destination.Position;
+			foreach (ResourceArchiveEntry entry in entries)
+				entry.Offset = destination.Position;
 		}
 		catch (IOException)
 		{
@@ -32,10 +34,14 @@ static class HandleResource
 	}
 
 	// Call after writing a resource's data. Sets the resource's length and patch number
-	public static void FinishData(ResourceArchiveEntry entry, FileStream destination)
+	public static void FinishData(List<ResourceArchiveEntry> entries, FileStream destination)
 	{
+		if (entries.Count == 0) // This will never happen
+			return;
+
+		int length;
 		try
-			{entry.Length = (int)(destination.Position - entry.Offset);}
+			{length = (int)(destination.Position - entries[0].Offset);} // "entries[^1]" doesn't matter here
 		catch (IOException)
 		{
 			Console.WriteLine();
@@ -45,15 +51,21 @@ static class HandleResource
 			Prompts.ExitPrompt();
 			return;
 		}
-		entry.CompressedLength = entry.Length;
-		entry.Patch = (byte)HandleMods.Data.PatchNumber;
 
-		// If an entry's length is zero, then resources with a patch number of zero use an offset of 0x10,
-		// while resources with a non-zero patch number (which includes mods) use an offset of 0
-		if (entry.Length == 0)
-			entry.Offset = 0;
-		// Todo: Remove the full name from resources with a length of zero (or completely delete the resource?)
-		// Some duplicate resources exist, though, so that on its own would just make the game use the duplicate entry
+		foreach (ResourceArchiveEntry entry in entries)
+		{
+			entry.Length = length;
+			entry.CompressedLength = length;
+			entry.Patch = (byte)HandleMods.Data.PatchNumber;
+
+			// If a resource's length is 0, then its full name should be empty, and its offset should be 0x10
+			// (if its patch number is zero) or 0 (if its patch number is non-zero, which includes mods)
+			if (length == 0)
+			{
+				entry.FullName = "";
+				entry.Offset = 0;
+			}
+		}
 
 		// None of DOOM (2016)'s nor DOOM VFR's data files end with padding, so don't pad it until the next resource
 		// (If the last mod resource is empty, then "StartData" will still add padding, but that's not problematic)
@@ -140,11 +152,12 @@ static class HandleResource
 			return; // We load from highest-priority to lowest-priority, so don't override the conflict
 		}
 
-		// In case of resources with the same path, DOOM (2016) loads the last duplicate, so use "FindLast" here
-		ResourceArchiveEntry? entry = container.Entries.FindLast(x => x.FullName == relativePath);
+		// In case of resources with the same path, DOOM (2016) usually loads the last duplicate... but not always!
+		// Thus, we must replace all duplicates
+		List<ResourceArchiveEntry> entries = container.Entries.FindAll(x => x.FullName == relativePath);
 
 		bool added = false;
-		if (entry is null)
+		if (entries.Count == 0)
 		{
 			added = true;
 			(string Type, string Name)? guess = ResourceType.GetTypeAndShortName(relativePath);
@@ -185,7 +198,7 @@ static class HandleResource
 				return;
 			}
 
-			entry = new ResourceArchiveEntry(container)
+			ResourceArchiveEntry entry = new(archive: container)
 			{
 				Id        = container.Entries.Count,
 				Type      = guess.Value.Type,
@@ -193,11 +206,21 @@ static class HandleResource
 				FullName  = relativePath,
 			};
 			container.Entries.Add(entry);
+			entries = [entry];
 		}
-		else if (entry.Type == "binaryFile") // Matched an existing "binaryFile", for custom strings
+		else if (entries[^1].Type == "binaryFile") // Matched an existing "binaryFile", for custom strings
 		{
-			if (entry.FullName.StartsWithOrdinal("generated/binaryfile/strings/"))
-				HandleStrings.LoadCustomStrings(source, entry, (int)length);
+			if (entries.Count != 1)
+			{
+				Console.WriteLine();
+				Prompts.WriteError("ERROR: Failed to install mods!");
+				Prompts.WriteWarning($"\"{relativePath}\" has vanilla duplicates");
+				Prompts.ExitPrompt();
+				return;
+			}
+
+			if (relativePath.StartsWithOrdinal("generated/binaryfile/strings/"))
+				HandleStrings.LoadCustomStrings(source, entries[0], (int)length);
 			else // Don't allow modding binary CFGs directly
 			{
 				Console.WriteLine();
@@ -208,9 +231,9 @@ static class HandleResource
 			return;
 		}
 
-		StartData(entry, destination);
-		LoadData(source, entry, destination, (int)length, added);
-		FinishData(entry, destination);
+		StartData(entries, destination);
+		LoadData(source, entries[^1], destination, (int)length, added);
+		FinishData(entries, destination);
 		HandleMods.Data.ModResources.Add(relativePath);
 	}
 }
