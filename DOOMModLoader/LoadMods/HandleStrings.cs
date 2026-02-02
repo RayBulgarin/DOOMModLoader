@@ -397,7 +397,7 @@ Failure:
 		ParseAllStrings(dec?.Data ?? bytes, lang, false); // Todo: Do this on a separate thread?
 		shouldFlush = true;
 
-		Prompts.WriteVerbose($"        Modified {entry.FullName}");
+		Prompts.WriteVerboseReplaced($"        Modified {entry.FullName}");
 	}
 
 	// Flushes custom strings after each individual mod

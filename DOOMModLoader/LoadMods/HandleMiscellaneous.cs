@@ -323,7 +323,7 @@ static class HandleMiscellaneous
 			HandleResource.FinishData([entry], destination);
 		}
 
-		Prompts.WriteVerbose("        Uncapped generated/decls/entitydef/*.decl");
-		Prompts.WriteVerbose("        Uncapped maps/*.entities");
+		Prompts.WriteVerboseReplaced("        Uncapped generated/decls/entitydef/*.decl");
+		Prompts.WriteVerboseReplaced("        Uncapped maps/*.entities");
 	}
 }

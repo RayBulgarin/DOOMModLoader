@@ -170,9 +170,24 @@ static class Prompts
 
 		if (!string.IsNullOrEmpty(text))
 		{
-			Console.Write(text); // Not "WriteLine"; we want to reset the colour before the newline
+			Console.WriteLine(text);
 			Console.ResetColor();
-			Console.WriteLine();
+		}
+	}
+
+	// Displays a message with green text, if verbosity is enabled in the settings file or on the command-line
+	public static void WriteVerboseReplaced(string? text = null)
+	{
+		if (!Config.Final.Verbose)
+			return;
+
+		if (Console.BackgroundColor != ConsoleColor.Green) // This check isn't reliable on Linux, sadly
+			Console.ForegroundColor = ConsoleColor.Green;
+
+		if (!string.IsNullOrEmpty(text))
+		{
+			Console.WriteLine(text);
+			Console.ResetColor();
 		}
 	}
 
@@ -184,9 +199,8 @@ static class Prompts
 
 		if (!string.IsNullOrEmpty(text))
 		{
-			Console.Write(text); // Not "WriteLine"; we want to reset the colour before the newline
+			Console.WriteLine(text);
 			Console.ResetColor();
-			Console.WriteLine();
 		}
 	}
 }

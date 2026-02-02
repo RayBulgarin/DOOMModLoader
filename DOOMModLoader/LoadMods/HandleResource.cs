@@ -104,7 +104,13 @@ static class HandleResource
 			}
 		}
 
-		Prompts.WriteVerbose($"        {(added ? "   Added" : "Replaced")} {entry.FullName}");
+		if (Config.Final.Verbose)
+		{
+			if (added)
+				Prompts.WriteVerbose($"           Added {entry.FullName}");
+			else
+				Prompts.WriteVerboseReplaced($"        Replaced {entry.FullName}");
+		}
 	}
 
 	// Loads a custom file, and determines what to do with it
