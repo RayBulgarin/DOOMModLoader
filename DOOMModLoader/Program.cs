@@ -309,10 +309,10 @@ static class Program
 	static void MainLoadMods()
 	{
 		HandleMods.ProcessArguments();
+		HandleMods.ValidatePaths();
 		Config.File.Load();
 		UpdateCheck.AskToCheck();
 		UpdateCheck.CheckForUpdates();
-		HandleMods.ValidatePaths();
 		HandleMods.UninstallModsAndSetPatchNumber();
 		PatchGame.CheckAndPatchGame();
 		bool hasMods = HandleMods.InstallMods();
