@@ -7,12 +7,12 @@ on:
     branches: wiki
 permissions:
   contents: write
-run-name: "Mirror to wiki: ${{ github.event.head_commit.message }}"
+run-name: "📖 Mirror to wiki: ${{ github.event.head_commit.message }}"
 
 jobs:
   mirror-to-github-wiki:
     name: Mirror to GitHub Wiki
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - name: Check out repository

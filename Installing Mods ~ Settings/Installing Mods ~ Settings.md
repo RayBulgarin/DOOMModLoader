@@ -36,8 +36,8 @@ If `checkForUpdates` is `-1` or `0`, then `lastUpdateCheck` will not be saved to
 
 ### `launchGame`
 *Default: Ask for `true` or `false`*\
-If `true`, automatically launches DOOM (2016) or DOOM VFR after installing mods, and closes the mod loader log after a short delay if you don't pause it.\
-If `false`, doesn't launch the game, and remains open until you manually close the mod loader log.
+If `true`, automatically launches DOOM (2016) or DOOM VFR after installing mods, and closes the mod loader log after a short delay if you don't pause it (on Windows).\
+If `false`, doesn't launch the game.
 
 ### `patchGame`
 *Default: `true`*\
@@ -46,7 +46,7 @@ If `false`, doesn't do that.
 
 Without this patch, if mods are installed, then the game will crash if developer mode is disabled, or mark save slots as developer-mode-only, lock achievements/Multiplayer, and fail to save certain settings correctly (including game difficulty) if developer mode is enabled.
 
-Before patching the game, "*-/steamapps/common/DOOM/DOOMx64(vk).exe*" will be backed up to "*-/steamapps/common/DOOM/base/DOOMx64(vk) (Pre-DOOMModLoader backup).exe*". If the backups already exist, they're overwritten.
+Before patching the game, "*-/steamapps/common/DOOM/DOOMx64(vk).exe*" will be backed up to "*-/steamapps/common/DOOM/base/DOOMx64(vk) (Pre-DOOMModLoader backup).exe*". If backups already exist, they'll be overwritten.
 
 Setting this to `false` will not automatically unpatch the game executable; you must manually replace the game executables with the backups, or right-click DOOM (2016) in your Steam library and choose "*Properties...*" > "*Installed Files*" > "*Verify integrity of game files*".
 
@@ -72,7 +72,7 @@ Special files like [**[text strings]**](Creating-Mods-~-Text-Strings) or [**["*m
 If `true`, displays all mod development warnings for all mods.\
 If `false`, displays all warnings for loose mods, and less warnings for zipped mods.
 
-This is mostly intended for mod developers.
+This is mostly intended for mod creators.
 
 ### `snapMap`
 *Default: `false`*\
@@ -94,7 +94,7 @@ If `false`, doesn't do that.
 If `true`, displays more information while installing mods, such as whether a resource was added or replaced.\
 If `false`, doesn't do that.
 
-If your mod is supposed to replace a resource, but this says "*added*" instead, then you might have a typo in the file path. This is mostly intended for mod developers.
+If your mod is supposed to replace a resource, but this says "*added*" instead, then you might have a typo in the file path. This is mostly intended for mod creators.
 
 ---
 
