@@ -308,7 +308,6 @@ static class AutoExecBlacklist
 		"runEndOfGameCredits",
 		"r_apiDump", // Useless for mods
 		"r_debugContext", // Initialisation only
-		"r_disableSteamOverlay", // Initialisation only, messes with player expectations
 		"r_dumpGeneratedGLSL",
 		"r_enableAmdShaderExtensions", // Initialisation only
 		"r_enableAsyncCompute", // Initialisation only
