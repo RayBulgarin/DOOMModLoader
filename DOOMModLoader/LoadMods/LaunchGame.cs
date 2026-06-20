@@ -61,7 +61,17 @@ static class LaunchGame
 
         Console.WriteLine();
         Prompts.WriteWarning("Warning: You will need \"+devMode_enable 1\" set as a launch option while mods are installed, and in-game settings will not be saved correctly");
-        Prompts.WriteWarning("Verify/Repair DOOM (2016)'s installation through GOG GALAXY or the game's installer to fix this");
+        if (BuildInfo.CurrentBuild.PatchOffset != -1 && !Config.Final.PatchGame)
+        {
+            if (Config.File.PatchGame)
+                Prompts.WriteWarning("Use \"-patchgame\" to fix this"); 
+            else
+                Prompts.WriteWarning("Set \"patchGame\" to \"true\" in \"DOOMModLoaderSettings.txt\" to fix this");
+        }
+        else
+        {
+            Prompts.WriteWarning("Verify/Repair DOOM (2016)'s installation through GOG GALAXY or the game's installer to fix this");
+        }
         Console.WriteLine();
     }
 
@@ -79,7 +89,7 @@ static class LaunchGame
             return;
         }
 
-        // Use DOOMLauncher if configured and available
+        // If the game executables weren't patched, use DOOMLauncher if it exists
         bool useDoomLauncher = (!BuildInfo.CurrentBuild!.Patched && BuildInfo.CurrentBuild.DoomLauncher
         && OperatingSystem.IsWindows() && File.Exists("./DOOMLauncher.exe"));
 
@@ -90,50 +100,27 @@ static class LaunchGame
 
         if (useDoomLauncher)
         {
-            info.FileName = $".{Path.DirectorySeparatorChar}DOOMLauncher.exe";
+            info.FileName = $".{Path.DirectorySeparatorChar}DOOMLauncher.exe"; 
             if (Config.Final.SnapMap)
                 info.Arguments = "+com_gameType 1";
             info.WindowStyle = ProcessWindowStyle.Hidden;
         }
         else
         {
-            // Forces the launcher to target DOOMx64vk.exe directly via file system execution path
-            info.FileName = $".{Path.DirectorySeparatorChar}DOOMx64vk.exe";
-            
+            // Cleaned up exclusively for GOG deployment targeting Vulkan build directly
+            if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
+                info.FileName = $".{Path.DirectorySeparatorChar}DOOMVFRx64.exe";
+            else
+                info.FileName = $".{Path.DirectorySeparatorChar}DOOMx64vk.exe";
+
             if (Config.Final.SnapMap)
                 info.Arguments = "+com_gameType 1";
             if (!BuildInfo.CurrentBuild.Patched)
                 info.Arguments += $"{(Config.Final.SnapMap ? " " : "")}+devMode_enable 1";
         }
 
-        string gameName = "DOOM (2016) [Vulkan]";
-
-        Console.WriteLine();
-        try
-        {
-            using Process? proc = Process.Start(info);
-
-            if (proc is null)
-            {
-                if (hasMods)
-                    ShowDeveloperModeWarning(useDoomLauncher);
-                Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
-            }
-            else
-            {
-                if (!skipSuccess)
-                    Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
-                if (hasMods)
-                    ShowDeveloperModeWarning(useDoomLauncher);
-                Console.WriteLine(useDoomLauncher ? "Ran DOOMLauncher!" : $"Launched {gameName}!");
-            }
-        }
-        catch (Win32Exception)
-        {
-            Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
-        }
-
-        Prompts.ExitTimer(exitCode: 0);
-        return;
-    }
-}
+        string gameName = "DOOM (2016) Vulkan";
+        if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
+            gameName = "DOOM VFR";
+        else if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_2016_Demo)
+            gameName = "DOOM (20
