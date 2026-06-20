@@ -9,7 +9,7 @@ namespace DOOMModLoader.Shared;
 class ResourceArchive : IDisposable
 {
 	bool _disposed = false;
-	readonly string _dataPath; // "[...]/steamapps/common/DOOM/base/(snap_)gameresources" - No "_002" or file extension
+	readonly string _dataPath; // "[...]/DOOM 2016/base/(snap_)gameresources" - No "_002" or file extension
 	Dictionary<int, FileStream> _dataStreams = []; // Open .resources/.patch file streams
 
 	public List<ResourceArchiveEntry> Entries {get; private set;} = []; // Individual resources within the container
