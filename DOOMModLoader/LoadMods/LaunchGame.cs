@@ -9,160 +9,131 @@ using System.IO;
 namespace DOOMModLoader.LoadMods;
 static class LaunchGame
 {
-	static bool skipSuccess = false;
+    static bool skipSuccess = false;
 
+    // Asks whether or not to launch the game, if the user hasn't previously chosen
+    public static void AskToLaunch(bool hasMods)
+    {
+        if (Config.Final.LaunchGame is not null) // Don't ask if it's already set
+            return;
 
+        Console.WriteLine();
+        Prompts.WriteSuccess($"\nSuccessfully {(hasMods ? "" : "un")}installed mods!");
+        skipSuccess = true;
+        Console.Write(
+            ""
+            + "\n"
+            + "\nDo you want to automatically launch the game after installing mods?"
+            + "\nThis can be changed later by editing \"DOOMModLoaderSettings.txt\""
+            + "\n"
+            + "\n(Press [Y] to launch the game)"
+            + "\n(Press [N] to deny and exit)"
+        );
+        Config.File.LaunchGame = Prompts.GetYesOrNo();
 
-	// Asks whether or not to launch the game, if the user hasn't previously chosen
-	public static void AskToLaunch(bool hasMods)
-	{
-		if (Config.Final.LaunchGame is not null // Don't ask if it's already set
-		|| (BuildInfo.CurrentBuild!.Gog && !OperatingSystem.IsWindows())) // Don't ask if we can't launch it anyway
-			return;
+        if (Config.File.LaunchGame is null)
+            Prompts.WriteWarning("Warning: Failed to detect keystroke");
+        else if (Config.File.LaunchGame == true)
+            Config.ShouldSave = true;
+        else
+        {
+            Config.ShouldSave = true;
+            Config.File.Save();
+            Environment.Exit(0); // Exit immediately if the user pressed N
+            return;
+        }
+    }
 
-		Console.WriteLine();
-		Prompts.WriteSuccess($"\nSuccessfully {(hasMods ? "" : "un")}installed mods!");
-		skipSuccess = true;
-		Console.Write(
-			""
-			+ "\n"
-			+ "\nDo you want to automatically launch the game after installing mods?"
-			+ "\nThis can be changed later by editing \"DOOMModLoaderSettings.txt\""
-			+ "\n"
-			+ "\n(Press [Y] to launch the game)"
-			+ "\n(Press [N] to deny and exit)"
-		);
-		Config.File.LaunchGame = Prompts.GetYesOrNo();
+    // Shows a warning about requiring "+devMode_enable 1" if the game is unpatched
+    static void ShowDeveloperModeWarning(bool useDoomLauncher)
+    {
+        if (BuildInfo.CurrentBuild!.Mismatched || string.IsNullOrEmpty(BuildInfo.CurrentBuild.BinaryName))
+        {
+            Console.WriteLine();
+            Prompts.WriteWarning("Warning: Failed to recognise game version");
+            if (!BuildInfo.CurrentBuild.Patched && !useDoomLauncher)
+                Prompts.WriteWarning("You will need \"+devMode_enable 1\" set as a launch option while mods are installed, and in-game settings will not be saved correctly");
+            Console.WriteLine();
+            return;
+        }
+        else if (BuildInfo.CurrentBuild.Patched || useDoomLauncher)
+            return;
 
-		if (Config.File.LaunchGame is null)
-			Prompts.WriteWarning("Warning: Failed to detect keystroke");
-		else if (Config.File.LaunchGame == true)
-			Config.ShouldSave = true;
-		else
-		{
-			Config.ShouldSave = true;
-			Config.File.Save();
-			Environment.Exit(0); // Exit immediately if the user pressed N
-			return;
-		}
-	}
+        Console.WriteLine();
+        Prompts.WriteWarning("Warning: You will need \"+devMode_enable 1\" set as a launch option while mods are installed, and in-game settings will not be saved correctly");
+        Prompts.WriteWarning("Verify/Repair DOOM (2016)'s installation through GOG GALAXY or the game's installer to fix this");
+        Console.WriteLine();
+    }
 
-	// Shows a warning about requiring "+devMode_enable 1" if the game is unpatched
-	static void ShowDeveloperModeWarning(bool useDoomLauncher)
-	{
-		if (BuildInfo.CurrentBuild!.Mismatched || string.IsNullOrEmpty(BuildInfo.CurrentBuild.BinaryName))
-		{
-			Console.WriteLine();
-			Prompts.WriteWarning("Warning: Failed to recognise game version");
-			if (!BuildInfo.CurrentBuild.Patched && !useDoomLauncher)
-				Prompts.WriteWarning("You will need \"+devMode_enable 1\" set as a launch option while mods are installed, and in-game settings will not be saved correctly");
-			Console.WriteLine();
-			return;
-		}
-		else if (BuildInfo.CurrentBuild.Patched || useDoomLauncher)
-			return;
+    // Launches the game and exits after a timer, or waits for a keystroke and exits
+    public static void LaunchAndExit(bool hasMods)
+    {
+        if (Config.Final.LaunchGame != true)
+        {
+            if (!skipSuccess)
+            {
+                Console.WriteLine();
+                Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
+            }
+            Prompts.ExitPrompt(exitCode: 0); // Exit after a keystroke
+            return;
+        }
 
-		Console.WriteLine();
-		Prompts.WriteWarning("Warning: You will need \"+devMode_enable 1\" set as a launch option while mods are installed, and in-game settings will not be saved correctly");
-		if (BuildInfo.CurrentBuild.PatchOffset != -1 && !Config.Final.PatchGame)
-		{
-			if (Config.File.PatchGame)
-				Prompts.WriteWarning("Use \"-patchgame\" to fix this"); // The "-nopatchgame" argument was used
-			else
-				Prompts.WriteWarning("Set \"patchGame\" to \"true\" in \"DOOMModLoaderSettings.txt\" to fix this");
-		}
-		else if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
-			Prompts.WriteWarning("Right-click DOOM VFR in your Steam library, and choose \"Properties...\" > \"Installed Files\" > \"Verify integrity of game files\" to fix this");
-		else if (!BuildInfo.CurrentBuild.Gog)
-			Prompts.WriteWarning("Right-click DOOM (2016) in your Steam library, and choose \"Properties...\" > \"Installed Files\" > \"Verify integrity of game files\" to fix this");
-		else
-			Prompts.WriteWarning("Verify/Repair DOOM (2016)'s installation through GOG GALAXY or the game's installer to fix this");
-		Console.WriteLine();
-	}
+        // Use DOOMLauncher if configured and available
+        bool useDoomLauncher = (!BuildInfo.CurrentBuild!.Patched && BuildInfo.CurrentBuild.DoomLauncher
+        && OperatingSystem.IsWindows() && File.Exists("./DOOMLauncher.exe"));
 
-	// Launches the game and exits after a timer, or waits for a keystroke and exits
-	public static void LaunchAndExit(bool hasMods)
-	{
-		if (Config.Final.LaunchGame != true
-		|| (BuildInfo.CurrentBuild!.Gog && !OperatingSystem.IsWindows())) // We can't launch the GOG version on Linux
-		{
-			if (!skipSuccess)
-			{
-				Console.WriteLine();
-				Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
-			}
-			Prompts.ExitPrompt(exitCode: 0); // Exit after a keystroke
-			return;
-		}
+        ProcessStartInfo info = new()
+        {
+            UseShellExecute = true, 
+        };
 
-		// If the game executables weren't patched, use DOOMLauncher if it exists
-		bool useDoomLauncher = (!BuildInfo.CurrentBuild!.Patched && BuildInfo.CurrentBuild.DoomLauncher
-		&& OperatingSystem.IsWindows() && File.Exists("./DOOMLauncher.exe"));
+        if (useDoomLauncher)
+        {
+            info.FileName = $".{Path.DirectorySeparatorChar}DOOMLauncher.exe";
+            if (Config.Final.SnapMap)
+                info.Arguments = "+com_gameType 1";
+            info.WindowStyle = ProcessWindowStyle.Hidden;
+        }
+        else
+        {
+            // Forces the launcher to target DOOMx64vk.exe directly via file system execution path
+            info.FileName = $".{Path.DirectorySeparatorChar}DOOMx64vk.exe";
+            
+            if (Config.Final.SnapMap)
+                info.Arguments = "+com_gameType 1";
+            if (!BuildInfo.CurrentBuild.Patched)
+                info.Arguments += $"{(Config.Final.SnapMap ? " " : "")}+devMode_enable 1";
+        }
 
-		ProcessStartInfo info = new()
-		{
-			UseShellExecute = true, 
-		};
+        string gameName = "DOOM (2016) [Vulkan]";
 
-		if (useDoomLauncher)
-		{
-			info.FileName = $".{Path.DirectorySeparatorChar}DOOMLauncher.exe"; // A forward slash doesn't work here
-			if (Config.Final.SnapMap)
-				info.Arguments = "+com_gameType 1";
-			info.WindowStyle = ProcessWindowStyle.Hidden;
-		}
-		else if (BuildInfo.CurrentBuild.Gog)
-		{
-			if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
-				info.FileName = $".{Path.DirectorySeparatorChar}DOOMVFRx64.exe"; // A forward slash doesn't work here
-			else
-				info.FileName = $".{Path.DirectorySeparatorChar}DOOMx64.exe";
-			if (Config.Final.SnapMap)
-				info.Arguments = "+com_gameType 1";
-			if (!BuildInfo.CurrentBuild.Patched)
-				info.Arguments += $"{(Config.Final.SnapMap ? " " : "")}+devMode_enable 1";
-		}
-		else
-		{
-			// The 2024 Steam build of DOOM (2016) MUST be launched through Steam, while the 2025 GOG build MUST NOT
-			// On Windows, all other game builds can be launched both through Steam and via the EXE file
-			// But on Linux, Windows EXEs can't be run directly, so always launch all Steam game builds through Steam
-			if (Config.Final.SnapMap)
-				info.FileName += "//+com_gameType 1";
-			if (!BuildInfo.CurrentBuild.Patched)
-				info.FileName += $"{(Config.Final.SnapMap ? " " : "//")}+devMode_enable 1";
-		}
+        Console.WriteLine();
+        try
+        {
+            using Process? proc = Process.Start(info);
 
-		string gameName = "DOOM (2016)";
-		if (     BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
-			gameName = "DOOM VFR";
-		else if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_2016_Demo)
-			gameName = "DOOM (2016)'s demo";
+            if (proc is null)
+            {
+                if (hasMods)
+                    ShowDeveloperModeWarning(useDoomLauncher);
+                Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
+            }
+            else
+            {
+                if (!skipSuccess)
+                    Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
+                if (hasMods)
+                    ShowDeveloperModeWarning(useDoomLauncher);
+                Console.WriteLine(useDoomLauncher ? "Ran DOOMLauncher!" : $"Launched {gameName}!");
+            }
+        }
+        catch (Win32Exception)
+        {
+            Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
+        }
 
-		Console.WriteLine();
-		try
-		{
-			using Process? proc = Process.Start(info);
-
-			if (proc is null)
-			{
-				if (hasMods)
-					ShowDeveloperModeWarning(useDoomLauncher);
-				Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
-			}
-			else
-			{
-				if (!skipSuccess)
-					Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
-				if (hasMods)
-					ShowDeveloperModeWarning(useDoomLauncher);
-				Console.WriteLine(useDoomLauncher ? "Ran DOOMLauncher!" : $"Launched {gameName}!");
-			}
-		}
-		catch (Win32Exception) // "Win32Exception" is multi-platform, used when the file doesn't exist
-			{Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");}
-
-		Prompts.ExitTimer(exitCode: 0); // Exit with 0 even if we couldn't launch the game
-		return;
-	}
+        Prompts.ExitTimer(exitCode: 0);
+        return;
+    }
 }
