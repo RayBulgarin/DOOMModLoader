@@ -101,7 +101,7 @@ static class LaunchGame
 
 		ProcessStartInfo info = new()
 		{
-			UseShellExecute = true, // Don't wait for the process to end, and let "steam://" URLs work
+			UseShellExecute = true, 
 		};
 
 		if (useDoomLauncher)
@@ -127,7 +127,6 @@ static class LaunchGame
 			// The 2024 Steam build of DOOM (2016) MUST be launched through Steam, while the 2025 GOG build MUST NOT
 			// On Windows, all other game builds can be launched both through Steam and via the EXE file
 			// But on Linux, Windows EXEs can't be run directly, so always launch all Steam game builds through Steam
-			info.FileName = $"steam://run/{BuildInfo.CurrentBuild.SteamAppId}";
 			if (Config.Final.SnapMap)
 				info.FileName += "//+com_gameType 1";
 			if (!BuildInfo.CurrentBuild.Patched)
