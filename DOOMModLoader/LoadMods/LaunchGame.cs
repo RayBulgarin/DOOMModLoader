@@ -123,4 +123,34 @@ static class LaunchGame
         if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
             gameName = "DOOM VFR";
         else if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_2016_Demo)
-            gameName = "DOOM (20
+            gameName = "DOOM (2016)'s demo";
+
+        Console.WriteLine();
+        try
+        {
+            using Process? proc = Process.Start(info);
+
+            if (proc is null)
+            {
+                if (hasMods)
+                    ShowDeveloperModeWarning(useDoomLauncher);
+                Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
+            }
+            else
+            {
+                if (!skipSuccess)
+                    Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
+                if (hasMods)
+                    ShowDeveloperModeWarning(useDoomLauncher);
+                Console.WriteLine(useDoomLauncher ? "Ran DOOMLauncher!" : $"Launched {gameName}!");
+            }
+        }
+        catch (Win32Exception) 
+        {
+            Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
+        }
+
+        Prompts.ExitTimer(exitCode: 0); 
+        return;
+    }
+}
