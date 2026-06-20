@@ -108,7 +108,6 @@ static class PatchGame
 		{
 			BinaryName = "",
 			Game = BuildInfo.GameKind.DOOM_2016,
-			Gog = File.Exists("./Galaxy64.dll"),
 		};
 
 		// DOOM VFR
