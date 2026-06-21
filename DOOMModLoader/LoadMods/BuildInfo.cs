@@ -23,7 +23,6 @@ static class BuildInfo
         public bool Mismatched = false; 
         public bool Gog = true; // Force-flagged exclusively for GOG bypassing store hooks
         public bool DoomLauncher = false; 
-        public int SteamAppId { get; } = 0; // Trick the analyzer so it stops complaining
     }
 
     private static Build? _currentBuild = null;
