@@ -44,7 +44,6 @@ static class LaunchGame
 		}
 	}
 
-	// FIXED: Removed the unused 'useDoomLauncher' parameter to satisfy dotnet analyzers
 	static void ShowDeveloperModeWarning()
 	{
 		// Intentionally left empty to bypass all console error spam.
@@ -67,30 +66,32 @@ static class LaunchGame
 
 		// If the game executables weren't patched, use DOOMLauncher if it exists
 		bool useDoomLauncher = (!BuildInfo.CurrentBuild!.Patched && BuildInfo.CurrentBuild.DoomLauncher
-		&& OperatingSystem.IsWindows() && File.Exists("./DOOMLauncher.exe"));
+		&& OperatingSystem.IsWindows() && File.Exists("DOOMLauncher.exe"));
 
+		// Bulletproof process execution configuration
 		ProcessStartInfo info = new()
 		{
-			UseShellExecute = true, 
-			Arguments = "" // FIXED: Initialize as empty string to prevent append failures
+			UseShellExecute = false, // Forces direct execution, preventing Windows Shell from dropping arguments
+			WorkingDirectory = Directory.GetCurrentDirectory(), // Locks the execution context
+			Arguments = "" 
 		};
 
 		if (useDoomLauncher)
 		{
-			info.FileName = $".{Path.DirectorySeparatorChar}DOOMLauncher.exe"; 
+			info.FileName = Path.GetFullPath("DOOMLauncher.exe"); 
 			if (Config.Final.SnapMap)
 				info.Arguments = "+com_gameType 1";
 			info.WindowStyle = ProcessWindowStyle.Hidden;
 		}
 		else
 		{
-			// Cleaned up exclusively for GOG deployment targeting Vulkan build directly
+			// Resolves exact absolute paths based on where the loader is running
 			if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
-				info.FileName = $".{Path.DirectorySeparatorChar}DOOMVFRx64.exe";
+				info.FileName = Path.GetFullPath("DOOMVFRx64.exe");
 			else
-				info.FileName = $".{Path.DirectorySeparatorChar}DOOMx64vk.exe";
+				info.FileName = Path.GetFullPath("DOOMx64vk.exe");
 
-			// FIXED: Directly assign the developer mode argument clearly so the engine receives it
+			// Directly assign the developer mode argument clearly so the engine receives it natively
 			if (Config.Final.SnapMap)
 				info.Arguments = "+com_gameType 1 +devMode_enable 1";
 			else
