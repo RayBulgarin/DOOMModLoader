@@ -64,44 +64,56 @@ static class LaunchGame
 			return;
 		}
 
-		// If the game executables weren't patched, use DOOMLauncher if it exists
-		bool useDoomLauncher = (!BuildInfo.CurrentBuild!.Patched && BuildInfo.CurrentBuild.DoomLauncher
+		// Fallback safety to ensure CurrentBuild isn't null before checking properties
+		var currentBuild = BuildInfo.CurrentBuild ?? new BuildInfo.Build { Game = BuildInfo.GameKind.DOOM_2016, Patched = true };
+
+		// Check if running under DOOMLauncher
+		bool useDoomLauncher = (!currentBuild.Patched && currentBuild.DoomLauncher
 		&& OperatingSystem.IsWindows() && File.Exists("DOOMLauncher.exe"));
 
 		// Bulletproof process execution configuration
 		ProcessStartInfo info = new()
 		{
 			UseShellExecute = false, // Forces direct execution, preventing Windows Shell from dropping arguments
-			WorkingDirectory = Directory.GetCurrentDirectory(), // Locks the execution context
+			WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory, 
 			Arguments = "" 
 		};
 
+		string targetExe;
 		if (useDoomLauncher)
 		{
-			info.FileName = Path.GetFullPath("DOOMLauncher.exe"); 
-			if (Config.Final.SnapMap)
-				info.Arguments = "+com_gameType 1";
+			targetExe = "DOOMLauncher.exe";
 			info.WindowStyle = ProcessWindowStyle.Hidden;
+			
+			// BYPASS FIX: Force developer mode flags even when running through the alternative launcher path
+			info.Arguments = Config.Final.SnapMap ? "+com_gameType 1 +devMode_enable 1" : "+devMode_enable 1";
 		}
 		else
 		{
-			// Resolves exact absolute paths based on where the loader is running
-			if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
-				info.FileName = Path.GetFullPath("DOOMVFRx64.exe");
+			// Dynamically match your game's engine state cleanly
+			if (currentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
+				targetExe = "DOOMVFRx64.exe";
+			else if (File.Exists("DOOMx64vk.exe"))
+				targetExe = "DOOMx64vk.exe"; // Directly locks your Vulkan engine configuration
 			else
-				info.FileName = Path.GetFullPath("DOOMx64vk.exe");
+				targetExe = "DOOMx64.exe";
 
 			// Directly assign the developer mode argument clearly so the engine receives it natively
-			if (Config.Final.SnapMap)
-				info.Arguments = "+com_gameType 1 +devMode_enable 1";
-			else
-				info.Arguments = "+devMode_enable 1";
+			info.Arguments = Config.Final.SnapMap ? "+com_gameType 1 +devMode_enable 1" : "+devMode_enable 1";
 		}
 
-		string gameName = "DOOM (2016) Vulkan";
-		if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
+		// Set absolute pathing context safely
+		info.FileName = Path.GetFullPath(targetExe);
+		string exeDir = Path.GetDirectoryName(info.FileName);
+		if (!string.IsNullOrEmpty(exeDir))
+		{
+			info.WorkingDirectory = exeDir; // Forces idTech engine to evaluate file indices inside the correct root path
+		}
+
+		string gameName = "DOOM (2016)";
+		if (currentBuild.Game == BuildInfo.GameKind.DOOM_VFR)
 			gameName = "DOOM VFR";
-		else if (BuildInfo.CurrentBuild.Game == BuildInfo.GameKind.DOOM_2016_Demo)
+		else if (currentBuild.Game == BuildInfo.GameKind.DOOM_2016_Demo)
 			gameName = "DOOM (2016)'s demo";
 
 		Console.WriteLine();
