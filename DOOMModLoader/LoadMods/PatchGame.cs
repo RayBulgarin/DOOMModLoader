@@ -26,5 +26,38 @@ static class PatchGame
 		{
 			BuildInfo.CurrentBuild.Game = BuildInfo.GameKind.DOOM_VFR;
 		}
+
+		// AUTOMATIC BYPASS: Force the game engine to accept unverified modded assets 
+		// by injecting the 'devMode_enable' variable into the engine's early startup configs.
+		try
+		{
+			string baseDirectory = "./base";
+			if (Directory.Exists(baseDirectory))
+			{
+				string[] targetConfigs = { "default.cfg", "local.cfg" };
+				foreach (string configName in targetConfigs)
+				{
+					string configPath = Path.Combine(baseDirectory, configName);
+					string injectionLine = "devMode_enable 1";
+
+					if (File.Exists(configPath))
+					{
+						string fileContent = File.ReadAllText(configPath);
+						if (!fileContent.Contains("devMode_enable"))
+						{
+							File.AppendAllText(configPath, Environment.NewLine + injectionLine + Environment.NewLine);
+						}
+					}
+					else
+					{
+						File.WriteAllText(configPath, injectionLine + Environment.NewLine);
+					}
+				}
+			}
+		}
+		catch (Exception)
+		{
+			// Fail silently if files are temporarily locked during execution
+		}
 	}
 }
