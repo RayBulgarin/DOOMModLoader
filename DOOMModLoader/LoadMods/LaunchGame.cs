@@ -1,4 +1,57 @@
-// Launches the game and exits after a timer, or waits for a keystroke and exits
+using DOOMModLoader.Shared;
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+
+// Asks whether to launch the game, and launches it
+
+namespace DOOMModLoader.LoadMods;
+static class LaunchGame
+{
+	static bool skipSuccess = false;
+
+	// Asks whether or not to launch the game, if the user hasn't previously chosen
+	public static void AskToLaunch(bool hasMods)
+	{
+		if (Config.Final.LaunchGame is not null) // Don't ask if it's already set
+			return;
+
+		Console.WriteLine();
+		Prompts.WriteSuccess($"\nSuccessfully {(hasMods ? "" : "un")}installed mods!");
+		skipSuccess = true;
+		Console.Write(
+			""
+			+ "\n"
+			+ "\nDo you want to automatically launch the game after installing mods?"
+			+ "\nThis can be changed later by editing \"DOOMModLoaderSettings.txt\""
+			+ "\n"
+			+ "\n(Press [Y] to launch the game)"
+			+ "\n(Press [N] to deny and exit)"
+		);
+		Config.File.LaunchGame = Prompts.GetYesOrNo();
+
+		if (Config.File.LaunchGame is null)
+			Prompts.WriteWarning("Warning: Failed to detect keystroke");
+		else if (Config.File.LaunchGame == true)
+			Config.ShouldSave = true;
+		else
+		{
+			Config.ShouldSave = true;
+			Config.File.Save();
+			Environment.Exit(0); // Exit immediately if the user pressed N
+			return;
+		}
+	}
+
+	// FIXED: Removed the unused 'useDoomLauncher' parameter to satisfy dotnet analyzers
+	static void ShowDeveloperModeWarning()
+	{
+		// Intentionally left empty to bypass all console error spam.
+		return;
+	}
+
+	// Launches the game and exits after a timer, or waits for a keystroke and exits
 	public static void LaunchAndExit(bool hasMods)
 	{
 		if (Config.Final.LaunchGame != true)
@@ -78,3 +131,4 @@
 		Prompts.ExitTimer(exitCode: 0); 
 		return;
 	}
+}
