@@ -44,8 +44,8 @@ static class LaunchGame
 		}
 	}
 
-	// MODIFICATION: Completely silenced version mismatch and developer mode warning outputs
-	static void ShowDeveloperModeWarning(bool useDoomLauncher)
+	// FIXED: Removed the unused 'useDoomLauncher' parameter to satisfy dotnet analyzers
+	static void ShowDeveloperModeWarning()
 	{
 		// Intentionally left empty to bypass all console error spam.
 		return;
@@ -92,8 +92,6 @@ static class LaunchGame
 			if (Config.Final.SnapMap)
 				info.Arguments = "+com_gameType 1";
 			
-			// MODIFICATION: Automatically pass developer mode parameter if mods are loaded.
-			// This removes the requirement for the user to configure Steam properties manually.
 			if (hasMods)
 			{
 				info.Arguments += $"{(Config.Final.SnapMap ? " " : "")}+devMode_enable 1";
@@ -114,7 +112,7 @@ static class LaunchGame
 			if (proc is null)
 			{
 				if (hasMods)
-					ShowDeveloperModeWarning(useDoomLauncher);
+					ShowDeveloperModeWarning(); // FIXED: Removed argument here
 				Prompts.WriteWarning($"Warning: Failed to launch {gameName}, but mods were successfully {(hasMods ? "" : "un")}installed");
 			}
 			else
@@ -122,7 +120,7 @@ static class LaunchGame
 				if (!skipSuccess)
 					Prompts.WriteSuccess($"Successfully {(hasMods ? "" : "un")}installed mods!");
 				if (hasMods)
-					ShowDeveloperModeWarning(useDoomLauncher);
+					ShowDeveloperModeWarning(); // FIXED: Removed argument here
 				Console.WriteLine(useDoomLauncher ? "Ran DOOMLauncher!" : $"Launched {gameName}!");
 			}
 		}
